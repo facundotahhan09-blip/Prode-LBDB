@@ -59,78 +59,80 @@ const GRUPOS = {
 };
 
 const MATCHES = [
-  {id:1,g:'A',h:'México',a:'Sudáfrica',date:'Jue 11 jun',time:'16:00',sede:'Azteca, CDMX'},
-  {id:2,g:'A',h:'Corea del Sur',a:'Rep. Checa',date:'Jue 11 jun',time:'23:00',sede:'Akron, Guadalajara'},
-  {id:3,g:'A',h:'Rep. Checa',a:'Sudáfrica',date:'Jue 18 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
-  {id:4,g:'A',h:'México',a:'Corea del Sur',date:'Jue 18 jun',time:'22:00',sede:'Akron, Guadalajara'},
-  {id:5,g:'A',h:'Rep. Checa',a:'México',date:'Mié 24 jun',time:'22:00',sede:'Azteca, CDMX'},
-  {id:6,g:'A',h:'Sudáfrica',a:'Corea del Sur',date:'Mié 24 jun',time:'22:00',sede:'BBVA, Monterrey'},
-  {id:7,g:'B',h:'Canadá',a:'Bosnia y Herz.',date:'Vie 12 jun',time:'16:00',sede:'BMO Field, Toronto'},
-  {id:8,g:'B',h:'Qatar',a:'Suiza',date:'Sáb 13 jun',time:'16:00',sede:"Levi's, San Francisco"},
-  {id:9,g:'B',h:'Suiza',a:'Bosnia y Herz.',date:'Jue 18 jun',time:'16:00',sede:'SoFi, Los Ángeles'},
-  {id:10,g:'B',h:'Canadá',a:'Qatar',date:'Jue 18 jun',time:'19:00',sede:'BC Place, Vancouver'},
-  {id:11,g:'B',h:'Suiza',a:'Canadá',date:'Mié 24 jun',time:'16:00',sede:'BC Place, Vancouver'},
-  {id:12,g:'B',h:'Bosnia y Herz.',a:'Qatar',date:'Mié 24 jun',time:'16:00',sede:'Lumen Field, Seattle'},
-  {id:13,g:'C',h:'Brasil',a:'Marruecos',date:'Sáb 13 jun',time:'19:00',sede:'MetLife, Nueva Jersey'},
-  {id:14,g:'C',h:'Haití',a:'Escocia',date:'Sáb 13 jun',time:'22:00',sede:'Gillette, Boston'},
-  {id:15,g:'C',h:'Escocia',a:'Marruecos',date:'Jue 19 jun',time:'19:00',sede:'Gillette, Boston'},
-  {id:16,g:'C',h:'Brasil',a:'Haití',date:'Jue 19 jun',time:'22:00',sede:'Lincoln Financial, Filadelfia'},
-  {id:17,g:'C',h:'Escocia',a:'Brasil',date:'Mié 24 jun',time:'19:00',sede:'Hard Rock, Miami'},
-  {id:18,g:'C',h:'Marruecos',a:'Haití',date:'Jue 26 jun',time:'19:00',sede:'Mercedes-Benz, Atlanta'},
-  {id:19,g:'D',h:'USA',a:'Paraguay',date:'Vie 12 jun',time:'22:00',sede:'SoFi, Los Ángeles'},
-  {id:20,g:'D',h:'Australia',a:'Turquía',date:'Dom 14 jun',time:'01:00',sede:'BC Place, Vancouver'},
-  {id:21,g:'D',h:'Turquía',a:'Paraguay',date:'Jue 19 jun',time:'01:00',sede:"Levi's, San Francisco"},
-  {id:22,g:'D',h:'USA',a:'Australia',date:'Jue 19 jun',time:'16:00',sede:'Lumen Field, Seattle'},
-  {id:23,g:'D',h:'Turquía',a:'USA',date:'Vie 26 jun',time:'23:00',sede:'SoFi, Los Ángeles'},
-  {id:24,g:'D',h:'Paraguay',a:'Australia',date:'Jue 25 jun',time:'23:00',sede:"Levi's, San Francisco"},
-  {id:25,g:'E',h:'Alemania',a:'Curazao',date:'Dom 14 jun',time:'14:00',sede:'NRG, Houston'},
-  {id:26,g:'E',h:'Costa de Marfil',a:'Ecuador',date:'Dom 14 jun',time:'20:00',sede:'Lincoln Financial, Filadelfia'},
-  {id:27,g:'E',h:'Alemania',a:'Costa de Marfil',date:'Sáb 20 jun',time:'17:00',sede:'BMO Field, Toronto'},
-  {id:28,g:'E',h:'Curazao',a:'Ecuador',date:'Sáb 20 jun',time:'21:00',sede:'Arrowhead, Kansas City'},
-  {id:29,g:'E',h:'Ecuador',a:'Alemania',date:'Jue 25 jun',time:'17:00',sede:'MetLife, Nueva Jersey'},
-  {id:30,g:'E',h:'Curazao',a:'Costa de Marfil',date:'Jue 25 jun',time:'17:00',sede:'Lincoln Financial, Filadelfia'},
-  {id:31,g:'F',h:'Países Bajos',a:'Japón',date:'Dom 14 jun',time:'17:00',sede:"AT&T, Dallas"},
-  {id:32,g:'F',h:'Suecia',a:'Túnez',date:'Dom 14 jun',time:'23:00',sede:'BBVA, Monterrey'},
-  {id:33,g:'F',h:'Países Bajos',a:'Suecia',date:'Sáb 20 jun',time:'14:00',sede:'NRG, Houston'},
-  {id:34,g:'F',h:'Túnez',a:'Japón',date:'Sáb 20 jun',time:'01:00',sede:'BBVA, Monterrey'},
-  {id:35,g:'F',h:'Japón',a:'Suecia',date:'Jue 25 jun',time:'20:00',sede:"AT&T, Dallas"},
-  {id:36,g:'F',h:'Túnez',a:'Países Bajos',date:'Jue 25 jun',time:'20:00',sede:'Arrowhead, Kansas City'},
-  {id:37,g:'G',h:'Bélgica',a:'Egipto',date:'Lun 15 jun',time:'16:00',sede:'Lumen Field, Seattle'},
-  {id:38,g:'G',h:'Irán',a:'Nueva Zelanda',date:'Lun 15 jun',time:'22:00',sede:'SoFi, Los Ángeles'},
-  {id:39,g:'G',h:'Bélgica',a:'Irán',date:'Dom 21 jun',time:'16:00',sede:'SoFi, Los Ángeles'},
-  {id:40,g:'G',h:'Nueva Zelanda',a:'Egipto',date:'Dom 21 jun',time:'22:00',sede:'BC Place, Vancouver'},
-  {id:41,g:'G',h:'Egipto',a:'Irán',date:'Sáb 27 jun',time:'00:00',sede:'Lumen Field, Seattle'},
-  {id:42,g:'G',h:'Nueva Zelanda',a:'Bélgica',date:'Sáb 27 jun',time:'00:00',sede:'BC Place, Vancouver'},
-  {id:43,g:'H',h:'España',a:'Cabo Verde',date:'Lun 15 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
-  {id:44,g:'H',h:'Arabia Saudita',a:'Uruguay',date:'Lun 15 jun',time:'19:00',sede:'Hard Rock, Miami'},
-  {id:45,g:'H',h:'España',a:'Arabia Saudita',date:'Dom 21 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
-  {id:46,g:'H',h:'Uruguay',a:'Cabo Verde',date:'Dom 21 jun',time:'19:00',sede:'Hard Rock, Miami'},
-  {id:47,g:'H',h:'Cabo Verde',a:'Arabia Saudita',date:'Vie 26 jun',time:'21:00',sede:'NRG, Houston'},
-  {id:48,g:'H',h:'Uruguay',a:'España',date:'Vie 26 jun',time:'21:00',sede:'Akron, Guadalajara'},
-  {id:49,g:'I',h:'Francia',a:'Senegal',date:'Mar 16 jun',time:'16:00',sede:'MetLife, Nueva Jersey'},
-  {id:50,g:'I',h:'Irak',a:'Noruega',date:'Mar 16 jun',time:'19:00',sede:'Gillette, Boston'},
-  {id:51,g:'I',h:'Francia',a:'Irak',date:'Lun 22 jun',time:'18:00',sede:'Lincoln Financial, Filadelfia'},
-  {id:52,g:'I',h:'Noruega',a:'Senegal',date:'Lun 22 jun',time:'21:00',sede:'MetLife, Nueva Jersey'},
-  {id:53,g:'I',h:'Noruega',a:'Francia',date:'Vie 26 jun',time:'16:00',sede:'Gillette, Boston'},
-  {id:54,g:'I',h:'Senegal',a:'Irak',date:'Vie 26 jun',time:'16:00',sede:'BMO Field, Toronto'},
-  {id:55,g:'J',h:'Argentina',a:'Argelia',date:'Mar 16 jun',time:'22:00',sede:'Arrowhead, Kansas City'},
-  {id:56,g:'J',h:'Austria',a:'Jordania',date:'Mar 16 jun',time:'02:00',sede:"Levi's, San Francisco"},
-  {id:57,g:'J',h:'Argentina',a:'Austria',date:'Lun 22 jun',time:'14:00',sede:"AT&T, Dallas"},
-  {id:58,g:'J',h:'Jordania',a:'Argelia',date:'Mar 23 jun',time:'01:00',sede:"Levi's, San Francisco"},
-  {id:59,g:'J',h:'Argelia',a:'Austria',date:'Sáb 27 jun',time:'23:00',sede:'Arrowhead, Kansas City'},
-  {id:60,g:'J',h:'Jordania',a:'Argentina',date:'Sáb 27 jun',time:'23:00',sede:"AT&T, Dallas"},
-  {id:61,g:'K',h:'Portugal',a:'RD Congo',date:'Mié 17 jun',time:'14:00',sede:'NRG, Houston'},
-  {id:62,g:'K',h:'Uzbekistán',a:'Colombia',date:'Mié 17 jun',time:'23:00',sede:'Azteca, CDMX'},
-  {id:63,g:'K',h:'Portugal',a:'Uzbekistán',date:'Mar 23 jun',time:'14:00',sede:'NRG, Houston'},
-  {id:64,g:'K',h:'RD Congo',a:'Colombia',date:'Mar 23 jun',time:'23:00',sede:'Akron, Guadalajara'},
-  {id:65,g:'K',h:'Colombia',a:'Portugal',date:'Sáb 27 jun',time:'20:30',sede:'Hard Rock, Miami'},
-  {id:66,g:'K',h:'RD Congo',a:'Uzbekistán',date:'Sáb 27 jun',time:'20:30',sede:'Mercedes-Benz, Atlanta'},
-  {id:67,g:'L',h:'Inglaterra',a:'Croacia',date:'Mié 17 jun',time:'17:00',sede:"AT&T, Dallas"},
-  {id:68,g:'L',h:'Ghana',a:'Panamá',date:'Mié 17 jun',time:'20:00',sede:'BMO Field, Toronto'},
-  {id:69,g:'L',h:'Inglaterra',a:'Ghana',date:'Mar 23 jun',time:'17:00',sede:'Gillette, Boston'},
-  {id:70,g:'L',h:'Panamá',a:'Croacia',date:'Mar 23 jun',time:'20:00',sede:'BMO Field, Toronto'},
-  {id:71,g:'L',h:'Panamá',a:'Inglaterra',date:'Sáb 27 jun',time:'18:00',sede:'MetLife, Nueva Jersey'},
-  {id:72,g:'L',h:'Croacia',a:'Ghana',date:'Sáb 27 jun',time:'18:00',sede:'Lincoln Financial, Filadelfia'}
+  {id:1,j:1,g:'A',h:'México',a:'Sudáfrica',date:'Jue 11 jun',time:'16:00',sede:'Azteca, CDMX'},
+  {id:2,j:1,g:'A',h:'Corea del Sur',a:'Rep. Checa',date:'Jue 11 jun',time:'23:00',sede:'Akron, Guadalajara'},
+  {id:7,j:1,g:'B',h:'Canadá',a:'Bosnia y Herz.',date:'Vie 12 jun',time:'16:00',sede:'BMO Field, Toronto'},
+  {id:19,j:1,g:'D',h:'USA',a:'Paraguay',date:'Vie 12 jun',time:'22:00',sede:'SoFi, Los Ángeles'},
+  {id:8,j:1,g:'B',h:'Qatar',a:'Suiza',date:'Sáb 13 jun',time:'16:00',sede:"Levi's, San Francisco"},
+  {id:13,j:1,g:'C',h:'Brasil',a:'Marruecos',date:'Sáb 13 jun',time:'19:00',sede:'MetLife, Nueva Jersey'},
+  {id:14,j:1,g:'C',h:'Haití',a:'Escocia',date:'Sáb 13 jun',time:'22:00',sede:'Gillette, Boston'},
+  {id:20,j:1,g:'D',h:'Australia',a:'Turquía',date:'Dom 14 jun',time:'01:00',sede:'BC Place, Vancouver'},
+  {id:25,j:1,g:'E',h:'Alemania',a:'Curazao',date:'Dom 14 jun',time:'14:00',sede:'NRG, Houston'},
+  {id:31,j:1,g:'F',h:'Países Bajos',a:'Japón',date:'Dom 14 jun',time:'17:00',sede:"AT&T, Dallas"},
+  {id:26,j:1,g:'E',h:'Costa de Marfil',a:'Ecuador',date:'Dom 14 jun',time:'20:00',sede:'Lincoln Financial, Filadelfia'},
+  {id:32,j:1,g:'F',h:'Suecia',a:'Túnez',date:'Dom 14 jun',time:'23:00',sede:'BBVA, Monterrey'},
+  {id:37,j:1,g:'G',h:'Bélgica',a:'Egipto',date:'Lun 15 jun',time:'16:00',sede:'Lumen Field, Seattle'},
+  {id:43,j:1,g:'H',h:'España',a:'Cabo Verde',date:'Lun 15 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
+  {id:44,j:1,g:'H',h:'Arabia Saudita',a:'Uruguay',date:'Lun 15 jun',time:'19:00',sede:'Hard Rock, Miami'},
+  {id:38,j:1,g:'G',h:'Irán',a:'Nueva Zelanda',date:'Lun 15 jun',time:'22:00',sede:'SoFi, Los Ángeles'},
+  {id:49,j:1,g:'I',h:'Francia',a:'Senegal',date:'Mar 16 jun',time:'16:00',sede:'MetLife, Nueva Jersey'},
+  {id:50,j:1,g:'I',h:'Irak',a:'Noruega',date:'Mar 16 jun',time:'19:00',sede:'Gillette, Boston'},
+  {id:55,j:1,g:'J',h:'Argentina',a:'Argelia',date:'Mar 16 jun',time:'22:00',sede:'Arrowhead, Kansas City'},
+  {id:56,j:1,g:'J',h:'Austria',a:'Jordania',date:'Mar 16 jun',time:'02:00',sede:"Levi's, San Francisco"},
+  {id:61,j:1,g:'K',h:'Portugal',a:'RD Congo',date:'Mié 17 jun',time:'14:00',sede:'NRG, Houston'},
+  {id:67,j:1,g:'L',h:'Inglaterra',a:'Croacia',date:'Mié 17 jun',time:'17:00',sede:"AT&T, Dallas"},
+  {id:68,j:1,g:'L',h:'Ghana',a:'Panamá',date:'Mié 17 jun',time:'20:00',sede:'BMO Field, Toronto'},
+  {id:62,j:1,g:'K',h:'Uzbekistán',a:'Colombia',date:'Mié 17 jun',time:'23:00',sede:'Azteca, CDMX'},
+
+  {id:3,j:2,g:'A',h:'Rep. Checa',a:'Sudáfrica',date:'Mié 18 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
+  {id:9,j:2,g:'B',h:'Suiza',a:'Bosnia y Herz.',date:'Mié 18 jun',time:'16:00',sede:'SoFi, Los Ángeles'},
+  {id:4,j:2,g:'A',h:'México',a:'Corea del Sur',date:'Mié 18 jun',time:'22:00',sede:'Akron, Guadalajara'},
+  {id:10,j:2,g:'B',h:'Canadá',a:'Qatar',date:'Mié 18 jun',time:'19:00',sede:'BC Place, Vancouver'},
+  {id:15,j:2,g:'C',h:'Escocia',a:'Marruecos',date:'Jue 19 jun',time:'19:00',sede:'Gillette, Boston'},
+  {id:16,j:2,g:'C',h:'Brasil',a:'Haití',date:'Jue 19 jun',time:'22:00',sede:'Lincoln Financial, Filadelfia'},
+  {id:22,j:2,g:'D',h:'USA',a:'Australia',date:'Jue 19 jun',time:'16:00',sede:'Lumen Field, Seattle'},
+  {id:21,j:2,g:'D',h:'Turquía',a:'Paraguay',date:'Jue 19 jun',time:'01:00',sede:"Levi's, San Francisco"},
+  {id:33,j:2,g:'F',h:'Países Bajos',a:'Suecia',date:'Sáb 20 jun',time:'14:00',sede:'NRG, Houston'},
+  {id:27,j:2,g:'E',h:'Alemania',a:'Costa de Marfil',date:'Sáb 20 jun',time:'17:00',sede:'BMO Field, Toronto'},
+  {id:28,j:2,g:'E',h:'Curazao',a:'Ecuador',date:'Sáb 20 jun',time:'21:00',sede:'Arrowhead, Kansas City'},
+  {id:34,j:2,g:'F',h:'Túnez',a:'Japón',date:'Sáb 20 jun',time:'01:00',sede:'BBVA, Monterrey'},
+  {id:39,j:2,g:'G',h:'Bélgica',a:'Irán',date:'Dom 21 jun',time:'16:00',sede:'SoFi, Los Ángeles'},
+  {id:45,j:2,g:'H',h:'España',a:'Arabia Saudita',date:'Dom 21 jun',time:'13:00',sede:'Mercedes-Benz, Atlanta'},
+  {id:46,j:2,g:'H',h:'Uruguay',a:'Cabo Verde',date:'Dom 21 jun',time:'19:00',sede:'Hard Rock, Miami'},
+  {id:40,j:2,g:'G',h:'Nueva Zelanda',a:'Egipto',date:'Dom 21 jun',time:'22:00',sede:'BC Place, Vancouver'},
+  {id:51,j:2,g:'I',h:'Francia',a:'Irak',date:'Lun 22 jun',time:'18:00',sede:'Lincoln Financial, Filadelfia'},
+  {id:52,j:2,g:'I',h:'Noruega',a:'Senegal',date:'Lun 22 jun',time:'21:00',sede:'MetLife, Nueva Jersey'},
+  {id:57,j:2,g:'J',h:'Argentina',a:'Austria',date:'Lun 22 jun',time:'14:00',sede:"AT&T, Dallas"},
+  {id:58,j:2,g:'J',h:'Jordania',a:'Argelia',date:'Mar 23 jun',time:'01:00',sede:"Levi's, San Francisco"},
+  {id:63,j:2,g:'K',h:'Portugal',a:'Uzbekistán',date:'Mar 23 jun',time:'14:00',sede:'NRG, Houston'},
+  {id:69,j:2,g:'L',h:'Inglaterra',a:'Ghana',date:'Mar 23 jun',time:'17:00',sede:'Gillette, Boston'},
+  {id:70,j:2,g:'L',h:'Panamá',a:'Croacia',date:'Mar 23 jun',time:'20:00',sede:'BMO Field, Toronto'},
+  {id:64,j:2,g:'K',h:'RD Congo',a:'Colombia',date:'Mar 23 jun',time:'23:00',sede:'Akron, Guadalajara'},
+
+  {id:11,j:3,g:'B',h:'Suiza',a:'Canadá',date:'Mié 24 jun',time:'16:00',sede:'BC Place, Vancouver'},
+  {id:12,j:3,g:'B',h:'Bosnia y Herz.',a:'Qatar',date:'Mié 24 jun',time:'16:00',sede:'Lumen Field, Seattle'},
+  {id:5,j:3,g:'A',h:'Rep. Checa',a:'México',date:'Mié 24 jun',time:'22:00',sede:'Azteca, CDMX'},
+  {id:6,j:3,g:'A',h:'Sudáfrica',a:'Corea del Sur',date:'Mié 24 jun',time:'22:00',sede:'BBVA, Monterrey'},
+  {id:17,j:3,g:'C',h:'Escocia',a:'Brasil',date:'Mié 24 jun',time:'19:00',sede:'Hard Rock, Miami'},
+  {id:29,j:3,g:'E',h:'Ecuador',a:'Alemania',date:'Jue 25 jun',time:'17:00',sede:'MetLife, Nueva Jersey'},
+  {id:30,j:3,g:'E',h:'Curazao',a:'Costa de Marfil',date:'Jue 25 jun',time:'17:00',sede:'Lincoln Financial, Filadelfia'},
+  {id:35,j:3,g:'F',h:'Japón',a:'Suecia',date:'Jue 25 jun',time:'20:00',sede:"AT&T, Dallas"},
+  {id:36,j:3,g:'F',h:'Túnez',a:'Países Bajos',date:'Jue 25 jun',time:'20:00',sede:'Arrowhead, Kansas City'},
+  {id:24,j:3,g:'D',h:'Paraguay',a:'Australia',date:'Jue 25 jun',time:'23:00',sede:"Levi's, San Francisco"},
+  {id:41,j:3,g:'G',h:'Egipto',a:'Irán',date:'Sáb 27 jun',time:'00:00',sede:'Lumen Field, Seattle'},
+  {id:42,j:3,g:'G',h:'Nueva Zelanda',a:'Bélgica',date:'Sáb 27 jun',time:'00:00',sede:'BC Place, Vancouver'},
+  {id:47,j:3,g:'H',h:'Cabo Verde',a:'Arabia Saudita',date:'Vie 26 jun',time:'21:00',sede:'NRG, Houston'},
+  {id:48,j:3,g:'H',h:'Uruguay',a:'España',date:'Vie 26 jun',time:'21:00',sede:'Akron, Guadalajara'},
+  {id:53,j:3,g:'I',h:'Noruega',a:'Francia',date:'Vie 26 jun',time:'16:00',sede:'Gillette, Boston'},
+  {id:54,j:3,g:'I',h:'Senegal',a:'Irak',date:'Vie 26 jun',time:'16:00',sede:'BMO Field, Toronto'},
+  {id:18,j:3,g:'C',h:'Marruecos',a:'Haití',date:'Jue 26 jun',time:'19:00',sede:'Mercedes-Benz, Atlanta'},
+  {id:23,j:3,g:'D',h:'Turquía',a:'USA',date:'Vie 26 jun',time:'23:00',sede:'SoFi, Los Ángeles'},
+  {id:59,j:3,g:'J',h:'Argelia',a:'Austria',date:'Sáb 27 jun',time:'23:00',sede:'Arrowhead, Kansas City'},
+  {id:60,j:3,g:'J',h:'Jordania',a:'Argentina',date:'Sáb 27 jun',time:'23:00',sede:"AT&T, Dallas"},
+  {id:65,j:3,g:'K',h:'Colombia',a:'Portugal',date:'Sáb 27 jun',time:'20:30',sede:'Hard Rock, Miami'},
+  {id:66,j:3,g:'K',h:'RD Congo',a:'Uzbekistán',date:'Sáb 27 jun',time:'20:30',sede:'Mercedes-Benz, Atlanta'},
+  {id:71,j:3,g:'L',h:'Panamá',a:'Inglaterra',date:'Sáb 27 jun',time:'18:00',sede:'MetLife, Nueva Jersey'},
+  {id:72,j:3,g:'L',h:'Croacia',a:'Ghana',date:'Sáb 27 jun',time:'18:00',sede:'Lincoln Financial, Filadelfia'}
 ];
 
 const ELIM_ROUNDS = [
@@ -290,60 +292,76 @@ function renderAdm() {
   renderElim('elima', true);
 }
 
-let selG = { u: 'A', a: 'A' };
+const JORNADAS = [
+  { num: 1, label: 'Jornada 1', dates: '11 – 17 jun' },
+  { num: 2, label: 'Jornada 2', dates: '18 – 23 jun' },
+  { num: 3, label: 'Jornada 3', dates: '24 – 27 jun' }
+];
+
+let selJ = { u: 1, a: 1 };
 
 function buildGT(elId, mode) {
   const el = document.getElementById(elId);
   el.innerHTML = '';
-  Object.keys(GRUPOS).forEach(g => {
+  JORNADAS.forEach(j => {
     const b = document.createElement('button');
-    b.className = 'gbt' + (selG[mode] === g ? ' on' : '');
-    b.textContent = 'Grupo ' + g;
-    b.onclick = () => { selG[mode] = g; buildGT(elId, mode); renderProns(mode === 'u' ? 'pu' : 'pa', mode); };
+    b.className = 'gbt' + (selJ[mode] === j.num ? ' on' : '');
+    b.innerHTML = `<strong>${j.label}</strong> <span style="font-size:11px;opacity:.7">${j.dates}</span>`;
+    b.onclick = () => { selJ[mode] = j.num; buildGT(elId, mode); renderProns(mode === 'u' ? 'pu' : 'pa', mode); };
     el.appendChild(b);
   });
 }
 
 function renderProns(elId, mode) {
-  const g = selG[mode];
-  const ms = MATCHES.filter(m => m.g === g);
+  const jNum = selJ[mode];
+  const ms = MATCHES.filter(m => m.j === jNum);
   const isA = mode === 'a';
-  const color = GRP_COLORS[g];
-  let html = `<div class="grp-header" style="background:rgba(${hexToRgb(color)},.1);border-color:rgba(${hexToRgb(color)},.3)">
-    <div class="grp-letter" style="background:${color}">${g}</div>
-    <div><div class="grp-title">Grupo ${g}</div>
-    <div class="grp-teams">${GRUPOS[g].map(t => fl(t) + ' ' + t).join(' · ')}</div></div>
-  </div>
-  <div class="grp-body">`;
+
+  // Agrupar por fecha para mostrar separadores de día
+  const byDate = {};
   ms.forEach(m => {
-    const r = cache.results[m.id];
-    const ph = isA ? (r ? r.home_goals : '') : (cache.prons[m.id]?.h ?? '');
-    const pa = isA ? (r ? r.away_goals : '') : (cache.prons[m.id]?.a ?? '');
-    const hasR = !!r;
-    const p = hasR && !isA ? pts(m.id, cache.prons[m.id]?.h, cache.prons[m.id]?.a) : null;
-    let badge = '';
-    if (p === 3) badge = '<span class="badge bex">+3 pts</span>';
-    else if (p === 1) badge = '<span class="badge bwi">+1 pt</span>';
-    else if (p === 0 && hasR) badge = '<span class="badge bno">0 pts</span>';
-    html += `<div class="match-card">
-      <div class="match-meta">
-        <span class="match-date">${m.date}</span>
-        <span style="color:var(--text3)">·</span>
-        <span class="match-time">${m.time} ARG</span>
-        <span style="color:var(--text3)">·</span>
-        <span class="match-sede">${m.sede}</span>
-        ${badge}
-      </div>
-      <div class="match-body">
-        <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-        <input type="number" min="0" max="30" value="${ph ?? ''}" id="m${mode}${m.id}h" ${hasR && !isA ? 'disabled' : ''}>
-        <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
-        <input type="number" min="0" max="30" value="${pa ?? ''}" id="m${mode}${m.id}a" ${hasR && !isA ? 'disabled' : ''}>
-        <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
-      </div>
-    </div>`;
+    if (!byDate[m.date]) byDate[m.date] = [];
+    byDate[m.date].push(m);
   });
-  html += '</div>';
+
+  let html = '';
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+        <span style="font-size:11px;color:var(--text3)">${matches.length} partido${matches.length > 1 ? 's' : ''}</span>
+      </div>`;
+    matches.forEach(m => {
+      const r = cache.results[m.id];
+      const ph = isA ? (r ? r.home_goals : '') : (cache.prons[m.id]?.h ?? '');
+      const pa = isA ? (r ? r.away_goals : '') : (cache.prons[m.id]?.a ?? '');
+      const hasR = !!r;
+      const p = hasR && !isA ? pts(m.id, cache.prons[m.id]?.h, cache.prons[m.id]?.a) : null;
+      let badge = '';
+      if (p === 3) badge = '<span class="badge bex">+3 pts</span>';
+      else if (p === 1) badge = '<span class="badge bwi">+1 pt</span>';
+      else if (p === 0 && hasR) badge = '<span class="badge bno">0 pts</span>';
+      const color = GRP_COLORS[m.g];
+      html += `<div class="match-card">
+        <div class="match-meta">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:${color};font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${m.g}</span>
+          <span class="match-time">${m.time} ARG</span>
+          <span style="color:var(--text3)">·</span>
+          <span class="match-sede">${m.sede}</span>
+          ${badge}
+        </div>
+        <div class="match-body">
+          <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
+          <input type="number" min="0" max="30" value="${ph ?? ''}" id="m${mode}${m.id}h" ${hasR && !isA ? 'disabled' : ''}>
+          <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
+          <input type="number" min="0" max="30" value="${pa ?? ''}" id="m${mode}${m.id}a" ${hasR && !isA ? 'disabled' : ''}>
+          <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
   document.getElementById(elId).innerHTML = html;
 }
 
@@ -487,42 +505,47 @@ async function renderTbl(id) {
 
 function renderMyRes() {
   let html = '';
-  Object.keys(GRUPOS).forEach(g => {
-    const color = GRP_COLORS[g];
-    const ms = MATCHES.filter(m => m.g === g);
-    html += `<div style="margin-bottom:1.25rem">
-      <div class="grp-header" style="background:rgba(${hexToRgb(color)},.1);border-color:rgba(${hexToRgb(color)},.3)">
-        <div class="grp-letter" style="background:${color}">${g}</div>
-        <div class="grp-title">Grupo ${g}</div>
-      </div>
-      <div class="grp-body">`;
-    ms.forEach(m => {
-      const r = cache.results[m.id];
-      const p = cache.prons[m.id];
-      const hasR = !!r;
-      const pp = p ? pts(m.id, p.h, p.a) : (hasR ? 0 : null);
-      let badge = '';
-      if (pp === 3) badge = '<span class="badge bex">+3</span>';
-      else if (pp === 1) badge = '<span class="badge bwi">+1</span>';
-      else if (pp === 0 && hasR) badge = '<span class="badge bno">0</span>';
-      const my = p ? `${p.h}-${p.a}` : '<span style="color:var(--text3)">—</span>';
-      html += `<div class="match-card">
-        <div class="match-meta">
-          <span class="match-date">${m.date}</span>
-          <span class="match-time">${m.time} ARG</span>
-          <span style="color:var(--text3);font-size:11px">Mi pronóstico: ${my}</span>
-          ${badge}
-        </div>
-        <div class="match-body">
-          <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-          <div style="text-align:center">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
-          <div></div>
-          <div></div>
-          <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
-        </div>
+  JORNADAS.forEach(j => {
+    const ms = MATCHES.filter(m => m.j === j.num);
+    const byDate = {};
+    ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+
+    html += `<div style="margin-bottom:1.5rem">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        ${j.label} <span style="font-size:12px;font-weight:400;color:var(--text2)">${j.dates}</span>
       </div>`;
+    Object.entries(byDate).forEach(([date, matches]) => {
+      html += `<div style="margin-bottom:1rem">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:500">${date}</div>`;
+      matches.forEach(m => {
+        const r = cache.results[m.id];
+        const p = cache.prons[m.id];
+        const hasR = !!r;
+        const pp = p ? pts(m.id, p.h, p.a) : (hasR ? 0 : null);
+        let badge = '';
+        if (pp === 3) badge = '<span class="badge bex">+3</span>';
+        else if (pp === 1) badge = '<span class="badge bwi">+1</span>';
+        else if (pp === 0 && hasR) badge = '<span class="badge bno">0</span>';
+        const my = p ? `${p.h}-${p.a}` : '<span style="color:var(--text3)">—</span>';
+        const color = GRP_COLORS[m.g];
+        html += `<div class="match-card">
+          <div class="match-meta">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:${color};font-size:11px;font-weight:700;color:#fff">${m.g}</span>
+            <span class="match-time">${m.time} ARG</span>
+            <span style="color:var(--text3);font-size:11px">Mi pronóstico: ${my}</span>
+            ${badge}
+          </div>
+          <div class="match-body">
+            <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
+            <div style="text-align:center">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
+            <div></div><div></div>
+            <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
     });
-    html += '</div></div>';
+    html += '</div>';
   });
   document.getElementById('rescont').innerHTML = html;
 }
