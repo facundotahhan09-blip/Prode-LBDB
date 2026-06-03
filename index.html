@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prode Mundial 2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0e1a;--bg2:#111827;--bg3:#1a2236;--bg4:#243048;
+    --text:#f0f4ff;--text2:#94a3b8;--text3:#64748b;
+    --border:#2a3a55;--border2:#3a4f70;
+    --accent:#3b82f6;--accent2:#1d4ed8;
+    --green:#22c55e;--yellow:#eab308;--red:#ef4444;
+    --radius:10px;--radius2:14px;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+  .app{max-width:680px;margin:0 auto;padding:1rem}
+  .screen{display:none}.screen.active{display:block}
+  input[type=text],input[type=password],input[type=number]{
+    padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);
+    background:var(--bg3);color:var(--text);font-size:14px;font-family:inherit;
+    width:100%;transition:border-color .2s
+  }
+  input:focus{outline:none;border-color:var(--accent)}
+  input[type=number]{width:52px;text-align:center;padding:7px 4px}
+  input:disabled{opacity:.5}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1px solid var(--border2);
+    border-radius:var(--radius);background:transparent;color:var(--text);font-size:13px;
+    font-family:inherit;cursor:pointer;transition:all .15s}
+  .btn:hover{background:var(--bg4);border-color:var(--border)}
+  .btn-primary{background:var(--accent);border-color:var(--accent2);color:#fff;font-weight:500}
+  .btn-primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  .btn-full{width:100%;justify-content:center}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1rem 1.25rem;margin-bottom:12px}
+  .label{font-size:12px;color:var(--text2);margin-bottom:4px}
+  .err{font-size:12px;color:var(--red);min-height:16px;margin-top:4px}
+  .ok{font-size:12px;color:var(--green);margin-top:4px}
+  .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+
+  /* Header */
+  .header{display:flex;align-items:center;gap:12px;padding:1rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+  .header-logo{width:48px;height:48px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .header h1{font-size:20px;font-weight:600}
+  .header p{font-size:12px;color:var(--text2);margin-top:2px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:1rem;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:8px 13px;font-size:12px;cursor:pointer;border:none;background:transparent;color:var(--text2);
+    font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
+  .tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:500}
+  .tc{display:none}.tc.on{display:block}
+
+  /* Grupo tabs */
+  .grp-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1rem}
+  .gbt{padding:4px 10px;font-size:12px;border:1px solid var(--border);border-radius:20px;
+    cursor:pointer;background:transparent;color:var(--text2);font-family:inherit;transition:all .15s}
+  .gbt:hover{border-color:var(--border2);color:var(--text)}
+  .gbt.on{border-color:var(--accent);color:var(--accent);font-weight:500;background:rgba(59,130,246,.1)}
+
+  /* Grupo header */
+  .grp-header{display:flex;align-items:center;gap:10px;padding:10px 14px;
+    border-radius:var(--radius2) var(--radius2) 0 0;border:1px solid var(--border);border-bottom:none}
+  .grp-letter{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+  .grp-title{font-size:14px;font-weight:600}
+  .grp-teams{font-size:11px;color:var(--text3)}
+  .grp-body{background:var(--bg2);border:1px solid var(--border);border-top:none;
+    border-radius:0 0 var(--radius2) var(--radius2);padding:10px;margin-bottom:12px}
+
+  /* Match card */
+  .match-card{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:7px;transition:border-color .15s}
+  .match-card:last-child{margin-bottom:0}
+  .match-meta{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .match-date{font-size:11px;color:var(--text3)}
+  .match-time{font-size:12px;color:var(--accent);font-weight:600}
+  .match-sede{font-size:11px;color:var(--text3)}
+  .match-body{display:grid;grid-template-columns:1fr 52px 16px 52px 1fr;align-items:center;gap:8px}
+  .team-l{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+  .team-r{display:flex;align-items:center;gap:6px}
+  .team-name{font-size:13px;font-weight:500}
+  .flag{font-size:19px;line-height:1}
+  .vs{font-size:11px;color:var(--text3);text-align:center}
+  .result-score{font-size:13px;font-weight:700;color:var(--text);text-align:center}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:8px;font-weight:500}
+  .bex{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+  .bwi{background:rgba(234,179,8,.15);color:var(--yellow);border:1px solid rgba(234,179,8,.3)}
+  .bno{background:rgba(100,116,139,.15);color:var(--text3);border:1px solid var(--border)}
+
+  /* Standings table */
+  .stbl{width:100%;border-collapse:collapse;font-size:12px}
+  .stbl th{padding:6px 8px;font-weight:500;color:var(--text3);text-align:center;border-bottom:1px solid var(--border);font-size:11px}
+  .stbl th:first-child,.stbl th:nth-child(2){text-align:left}
+  .stbl td{padding:9px 8px;text-align:center;border-bottom:1px solid var(--border)}
+  .stbl tr:last-child td{border-bottom:none}
+  .stbl td:nth-child(2){text-align:left}
+  .team-cell{display:flex;align-items:center;gap:7px}
+  .pts-bold{font-weight:700;font-size:13px;color:var(--text)}
+  .qualify-bar{border-left:3px solid var(--grp-color,#3b82f6)}
+
+  /* Tabla jugadores */
+  .ptbl{width:100%;border-collapse:collapse;font-size:13px}
+  .ptbl th{padding:6px 10px;font-weight:500;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);font-size:11px}
+  .ptbl td{padding:9px 10px;border-bottom:1px solid var(--border)}
+  .ptbl tr:last-child td{border-bottom:none}
+  .pn{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+  .p1{background:rgba(234,179,8,.2);color:var(--yellow)}
+  .p2{background:rgba(148,163,184,.15);color:var(--text2)}
+  .p3{background:rgba(180,120,60,.15);color:#cd7f32}
+
+  /* Stats */
+  .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+  .stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+  .stat-num{font-size:22px;font-weight:700}
+  .stat-label{font-size:11px;color:var(--text2);margin-top:3px}
+
+  /* Elim */
+  .elim-section{margin-bottom:1rem}
+  .elim-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .elim-match{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);
+    border-radius:var(--radius);margin-bottom:6px;font-size:12px;background:var(--bg2)}
+  .elim-team{flex:1;font-weight:500;display:flex;align-items:center;gap:5px}
+
+  /* Chips jugadores */
+  .player-chip{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .player-chip:last-child{border-bottom:none}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .dot-ok{background:var(--green);border:1.5px solid rgba(34,197,94,.5)}
+  .dot-nd{background:var(--yellow);border:1.5px solid rgba(234,179,8,.5)}
+
+  /* Loading */
+  .loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;padding:2rem 0;justify-content:center}
+  .spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LOGIN -->
+  <div id="sl" class="screen active">
+    <div class="header">
+      <div class="header-logo">🏆</div>
+      <div>
+        <h1>Prode Mundial 2026</h1>
+        <p>USA · México · Canadá &nbsp;·&nbsp; 11 jun – 19 jul</p>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:1rem">Ingresar al prode</div>
+      <div style="margin-bottom:10px"><div class="label">Tu nombre</div><input type="text" id="ln" placeholder="Ej: Matías"></div>
+      <div style="margin-bottom:12px"><div class="label">Contraseña del prode</div><input type="password" id="lp" placeholder="La que te pasaron" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="err" id="le"></div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Entrar →</button>
+      <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text2)">¿Sos el organizador? <button class="btn btn-sm" onclick="go('adml')">Acceso admin</button></div>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div id="adml" class="screen">
+    <div class="nav"><button class="btn btn-sm" onclick="go('sl')">← Volver</button><span style="font-size:12px;color:var(--text2)">Panel organizador</span></div>
+    <div class="card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:1rem">Acceso admin</div>
+      <div style="margin-bottom:12px"><div class="label">Contraseña admin</div><input type="password" id="ap" placeholder="Contraseña admin" onkeydown="if(event.key==='Enter')doAdmin()"></div>
+      <div class="err" id="ae"></div>
+      <button class="btn btn-primary btn-full" onclick="doAdmin()">Entrar como admin →</button>
+    </div>
+  </div>
+
+  <!-- USER -->
+  <div id="usr" class="screen">
+    <div class="nav">
+      <div style="display:flex;align-items:center;gap:8px"><div class="avatar" id="unav"></div><span style="font-size:14px;font-weight:600" id="uname"></span></div>
+      <button class="btn btn-sm" onclick="doOut()">Salir</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" onclick="st('tp',this)">Mis pronósticos</button>
+      <button class="tab" onclick="st('tg',this)">Grupos</button>
+      <button class="tab" onclick="st('tt',this)">Tabla</button>
+      <button class="tab" onclick="st('tr',this)">Mis resultados</button>
+      <button class="tab" onclick="st('te',this)">Eliminatorias</button>
+    </div>
+    <div id="tp" class="tc on"><div class="grp-tabs" id="gsu"></div><div id="pu"></div><button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div></div>
+    <div id="tg" class="tc"><div id="grpcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
+    <div id="tt" class="tc"><div id="tblcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
+    <div id="tr" class="tc"><div id="rescont"></div></div>
+    <div id="te" class="tc"><div id="elimu"></div></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="adm" class="screen">
+    <div class="nav">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" style="background:#7c3aed">⚙</div>
+        <span style="font-size:14px;font-weight:600">Admin</span>
+      </div>
+      <button class="btn btn-sm" onclick="doOut()">Salir</button>
+    </div>
+    <div class="tabs">
+      <button class="tab on" onclick="st('ar',this)">Resultados</button>
+      <button class="tab" onclick="st('ae2',this)">Eliminatorias</button>
+      <button class="tab" onclick="st('at',this)">Tabla</button>
+      <button class="tab" onclick="st('ac',this)">Config</button>
+      <button class="tab" onclick="st('apa',this)">Jugadores</button>
+    </div>
+    <div id="ar" class="tc on"><div class="grp-tabs" id="gsa"></div><div id="pa"></div><button class="btn btn-primary btn-full" onclick="saveRes()" style="margin-top:6px">✓ Guardar resultados</button><div class="ok" id="rmsg"></div></div>
+    <div id="ae2" class="tc"><div id="elima"></div></div>
+    <div id="at" class="tc"><div id="atblcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
+    <div id="ac" class="tc">
+      <div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:1rem">Contraseñas</div>
+        <div style="margin-bottom:10px"><div class="label">Contraseña jugadores (compartí esta con tus amigos)</div><input type="text" id="cfp"></div>
+        <div style="margin-bottom:12px"><div class="label">Contraseña admin</div><input type="text" id="cfa"></div>
+        <button class="btn btn-primary btn-sm" onclick="saveCfg()">💾 Guardar</button>
+        <div class="ok" id="cfmsg"></div>
+      </div>
+    </div>
+    <div id="apa" class="tc"><div id="partcont"></div></div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
