@@ -23,19 +23,20 @@ async function dbDelete(table, params) {
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 
+// Códigos ISO para flagcdn.com (funcionan en todos los navegadores incluyendo Windows)
 const FLAGS = {
-  'México':'🇲🇽','Sudáfrica':'🇿🇦','Corea del Sur':'🇰🇷','Rep. Checa':'🇨🇿',
-  'Canadá':'🇨🇦','Bosnia y Herz.':'🇧🇦','Qatar':'🇶🇦','Suiza':'🇨🇭',
-  'Brasil':'🇧🇷','Marruecos':'🇲🇦','Haití':'🇭🇹','Escocia':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-  'USA':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺','Turquía':'🇹🇷',
-  'Alemania':'🇩🇪','Curazao':'🏳','Costa de Marfil':'🇨🇮','Ecuador':'🇪🇨',
-  'Países Bajos':'🇳🇱','Japón':'🇯🇵','Suecia':'🇸🇪','Túnez':'🇹🇳',
-  'Bélgica':'🇧🇪','Egipto':'🇪🇬','Irán':'🇮🇷','Nueva Zelanda':'🇳🇿',
-  'España':'🇪🇸','Cabo Verde':'🇨🇻','Arabia Saudita':'🇸🇦','Uruguay':'🇺🇾',
-  'Francia':'🇫🇷','Senegal':'🇸🇳','Irak':'🇮🇶','Noruega':'🇳🇴',
-  'Argentina':'🇦🇷','Argelia':'🇩🇿','Austria':'🇦🇹','Jordania':'🇯🇴',
-  'Portugal':'🇵🇹','RD Congo':'🇨🇩','Uzbekistán':'🇺🇿','Colombia':'🇨🇴',
-  'Inglaterra':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croacia':'🇭🇷','Ghana':'🇬🇭','Panamá':'🇵🇦'
+  'México':'mx','Sudáfrica':'za','Corea del Sur':'kr','Rep. Checa':'cz',
+  'Canadá':'ca','Bosnia y Herz.':'ba','Qatar':'qa','Suiza':'ch',
+  'Brasil':'br','Marruecos':'ma','Haití':'ht','Escocia':'gb-sct',
+  'USA':'us','Paraguay':'py','Australia':'au','Turquía':'tr',
+  'Alemania':'de','Curazao':'cw','Costa de Marfil':'ci','Ecuador':'ec',
+  'Países Bajos':'nl','Japón':'jp','Suecia':'se','Túnez':'tn',
+  'Bélgica':'be','Egipto':'eg','Irán':'ir','Nueva Zelanda':'nz',
+  'España':'es','Cabo Verde':'cv','Arabia Saudita':'sa','Uruguay':'uy',
+  'Francia':'fr','Senegal':'sn','Irak':'iq','Noruega':'no',
+  'Argentina':'ar','Argelia':'dz','Austria':'at','Jordania':'jo',
+  'Portugal':'pt','RD Congo':'cd','Uzbekistán':'uz','Colombia':'co',
+  'Inglaterra':'gb-eng','Croacia':'hr','Ghana':'gh','Panamá':'pa'
 };
 
 const GRP_COLORS = {
@@ -160,7 +161,7 @@ let cache = { results: {}, elim: {}, players: [], prons: {}, elimProns: {}, conf
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 
-const fl = t => FLAGS[t] || '🏳';
+const fl = t => { const code = FLAGS[t]; return code ? `<img src="https://flagcdn.com/w40/${code}.png" width="24" height="16" style="border-radius:2px;object-fit:cover;vertical-align:middle" alt="${t}">` : '<span style="display:inline-block;width:24px;height:16px;background:#333;border-radius:2px"></span>'; };
 const ini = n => n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
 const win = (h,a) => h>a?'h':a>h?'a':'d';
 
