@@ -24,7 +24,9 @@
     width:100%;transition:border-color .2s
   }
   input:focus{outline:none;border-color:var(--accent)}
-  input[type=number]{width:52px;text-align:center;padding:7px 4px}
+  input[type=number]{width:52px;text-align:center;padding:7px 4px;-moz-appearance:textfield;appearance:textfield}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   input:disabled{opacity:.5}
   .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border:1px solid #3a4f70;
     border-radius:var(--radius);background:#1a2236;color:#fff;font-size:13px;
