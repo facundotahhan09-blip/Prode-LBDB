@@ -174,60 +174,49 @@
     <div class="hero">
       <div class="hero-aura"></div>
       <div class="hero-trophy">
-        <svg viewBox="0 0 120 160" width="115" height="153" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 120 170" width="112" height="158" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#fff4cc"/>
-              <stop offset="30%" stop-color="#f5c542"/>
-              <stop offset="60%" stop-color="#e0a814"/>
-              <stop offset="100%" stop-color="#9c6f08"/>
+            <linearGradient id="lfBody" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#a87a0c"/><stop offset="18%" stop-color="#f0c040"/><stop offset="38%" stop-color="#fff6d6"/>
+              <stop offset="52%" stop-color="#f5c542"/><stop offset="72%" stop-color="#d49e16"/><stop offset="100%" stop-color="#8a6508"/>
             </linearGradient>
-            <linearGradient id="goldDark" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#d4a017"/>
-              <stop offset="100%" stop-color="#7a5806"/>
+            <linearGradient id="lfBase" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#9c6f08"/><stop offset="40%" stop-color="#f5c542"/><stop offset="55%" stop-color="#fff6d6"/>
+              <stop offset="70%" stop-color="#e0a814"/><stop offset="100%" stop-color="#7a5806"/>
             </linearGradient>
-            <radialGradient id="globe" cx="40%" cy="35%" r="70%">
-              <stop offset="0%" stop-color="#fff4cc"/>
-              <stop offset="55%" stop-color="#f5c542"/>
-              <stop offset="100%" stop-color="#b8860b"/>
+            <radialGradient id="lfBall" cx="38%" cy="32%" r="72%">
+              <stop offset="0%" stop-color="#fff6d6"/><stop offset="45%" stop-color="#f5c542"/><stop offset="100%" stop-color="#a87a0c"/>
             </radialGradient>
+            <linearGradient id="lfHandle" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#8a6508"/><stop offset="50%" stop-color="#f0c040"/><stop offset="100%" stop-color="#8a6508"/>
+            </linearGradient>
           </defs>
-
-          <!-- Globo terráqueo arriba -->
-          <circle cx="60" cy="26" r="18" fill="url(#globe)" stroke="#9c6f08" stroke-width="1"/>
-          <!-- Meridianos y paralelos -->
-          <ellipse cx="60" cy="26" rx="7" ry="18" fill="none" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
-          <ellipse cx="60" cy="26" rx="18" ry="7" fill="none" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
-          <line x1="42" y1="26" x2="78" y2="26" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
-          <line x1="60" y1="8" x2="60" y2="44" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
-          <!-- Brillo del globo -->
-          <ellipse cx="53" cy="19" rx="5" ry="6" fill="#fffef5" opacity="0.45"/>
-
-          <!-- Soporte del globo (figuras estilizadas que sostienen) -->
-          <path d="M52 42 Q54 54 58 58 L62 58 Q66 54 68 42 Z" fill="url(#goldDark)"/>
-          <path d="M55 43 L54 56 M65 43 L66 56" stroke="#fff4cc" stroke-width="0.8" opacity="0.4"/>
-
+          <!-- Remate esfera arriba -->
+          <circle cx="60" cy="16" r="7" fill="url(#lfBall)" stroke="#9c6f08" stroke-width="0.6"/>
+          <ellipse cx="57" cy="13" rx="2.2" ry="2.8" fill="#fffef5" opacity="0.6"/>
+          <!-- Cuellito del remate -->
+          <path d="M49 23 L71 23 L68 30 L52 30 Z" fill="url(#lfBase)"/>
           <!-- Copa principal -->
-          <path d="M44 58 L76 58 Q74 80 60 92 Q46 80 44 58 Z" fill="url(#gold)"/>
-          <!-- Asas curvas -->
-          <path d="M44 60 Q26 62 28 78 Q30 90 45 86" fill="none" stroke="url(#goldDark)" stroke-width="5.5" stroke-linecap="round"/>
-          <path d="M76 60 Q94 62 92 78 Q90 90 75 86" fill="none" stroke="url(#goldDark)" stroke-width="5.5" stroke-linecap="round"/>
-
+          <path d="M40 32 L80 32 Q76 64 60 80 Q44 64 40 32 Z" fill="url(#lfBody)"/>
+          <rect x="40" y="31" width="40" height="4" rx="2" fill="url(#lfBase)"/>
+          <!-- Asas -->
+          <path d="M40 34 Q17 36 20 58 Q23 74 43 69" fill="none" stroke="url(#lfHandle)" stroke-width="6" stroke-linecap="round"/>
+          <path d="M80 34 Q103 36 100 58 Q97 74 77 69" fill="none" stroke="url(#lfHandle)" stroke-width="6" stroke-linecap="round"/>
+          <!-- Reflejo principal suave -->
+          <path d="M47 36 Q50 56 56 74 Q53 60 51 36 Z" fill="#fffef5" opacity="0.35"/>
+          <!-- Reflejo secundario fino -->
+          <path d="M67 37 Q66 52 62 68" stroke="#fffef5" stroke-width="1.5" opacity="0.25" fill="none" stroke-linecap="round"/>
           <!-- Cuello -->
-          <path d="M54 92 L66 92 L64 108 L56 108 Z" fill="url(#goldDark)"/>
-
+          <path d="M53 80 L67 80 L65 98 L55 98 Z" fill="url(#lfBase)"/>
           <!-- Base escalonada -->
-          <path d="M46 108 L74 108 L71 120 L49 120 Z" fill="url(#gold)"/>
-          <rect x="44" y="122" width="32" height="9" rx="2" fill="url(#goldDark)"/>
-          <rect x="38" y="133" width="44" height="12" rx="3" fill="url(#gold)"/>
-          <rect x="34" y="147" width="52" height="8" rx="2" fill="url(#goldDark)"/>
-
-          <!-- Brillo vertical de la copa -->
-          <path d="M50 60 L54 60 L52 86 Q51 87 50 86 Z" fill="#fffef5" opacity="0.4"/>
-          <!-- Placa con estrellas (campeón) -->
-          <circle cx="54" cy="138" r="1.6" fill="#fff4cc"/>
-          <circle cx="60" cy="138" r="1.6" fill="#fff4cc"/>
-          <circle cx="66" cy="138" r="1.6" fill="#fff4cc"/>
+          <path d="M44 98 L76 98 L72 110 L48 110 Z" fill="url(#lfBody)"/>
+          <rect x="42" y="112" width="36" height="10" rx="2" fill="url(#lfBase)"/>
+          <rect x="35" y="124" width="50" height="12" rx="3" fill="url(#lfBody)"/>
+          <rect x="31" y="138" width="58" height="8" rx="2" fill="url(#lfBase)"/>
+          <!-- Placa con estrellas -->
+          <circle cx="54" cy="129" r="1.5" fill="#fff6d6"/>
+          <circle cx="60" cy="129" r="1.5" fill="#fff6d6"/>
+          <circle cx="66" cy="129" r="1.5" fill="#fff6d6"/>
         </svg>
       </div>
       <div class="hero-text">
