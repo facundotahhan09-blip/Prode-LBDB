@@ -44,6 +44,34 @@
   /* Header */
   .header{display:flex;align-items:center;gap:12px;padding:1rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
   .header-logo{width:48px;height:48px;background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+
+  /* Hero épica del login */
+  .hero{position:relative;text-align:center;padding:2.5rem 1rem 2rem;margin-bottom:1rem;overflow:hidden}
+  .hero-aura{position:absolute;top:50%;left:50%;width:420px;height:420px;transform:translate(-50%,-58%);
+    background:radial-gradient(circle, rgba(245,197,66,.28) 0%, rgba(59,130,246,.18) 38%, rgba(124,58,237,.10) 60%, transparent 72%);
+    border-radius:50%;filter:blur(8px);z-index:0;animation:auraPulse 5s ease-in-out infinite}
+  @keyframes auraPulse{0%,100%{opacity:.75;transform:translate(-50%,-58%) scale(1)}50%{opacity:1;transform:translate(-50%,-58%) scale(1.08)}}
+  .hero-trophy{position:relative;z-index:1;display:inline-block;filter:drop-shadow(0 6px 24px rgba(245,197,66,.45));animation:trophyFloat 4s ease-in-out infinite}
+  @keyframes trophyFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .hero-text{position:relative;z-index:1;margin-top:1rem}
+  .hero-welcome{font-size:13px;font-weight:600;letter-spacing:3px;color:var(--text2);margin-bottom:4px}
+  .hero-title{font-size:40px;font-weight:800;letter-spacing:1px;line-height:1.05;
+    background:linear-gradient(100deg,#a87a0c 0%,#f0c040 22%,#fff6d6 42%,#f5c542 55%,#d49e16 75%,#8a6508 100%);
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:shine 4.5s linear infinite;margin:4px 0 0}
+  @keyframes shine{to{background-position:200% center}}
+  .hero-edition{font-size:14px;font-weight:700;letter-spacing:4px;margin-top:6px;
+    background:linear-gradient(100deg,#a87a0c 0%,#f0c040 30%,#fff6d6 50%,#d49e16 70%,#8a6508 100%);
+    background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:shine 4.5s linear infinite;opacity:0.85}
+  .hero-sub{font-size:11px;font-weight:600;letter-spacing:2px;color:var(--text3);margin-top:8px}
+  @media(max-width:480px){.hero-title{font-size:32px}.hero-aura{width:320px;height:320px}}
+
+  /* Botones del login */
+  .login-btn{width:100%;padding:11px;border:none;border-radius:10px;background:#7cc4f0;color:#fff;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;transition:all .15s}
+  .login-btn:hover{background:#fff;color:#0a0e1a}
+  .login-admin-btn{font-size:12px;font-weight:700;padding:7px 16px;border:none;border-radius:8px;background:#9aa7b8;color:#fff;font-family:inherit;cursor:pointer;transition:all .15s}
+  .login-admin-btn:hover{background:#fff;color:#0a0e1a}
   .header h1{font-size:20px;font-weight:600}
   .header p{font-size:12px;color:var(--text2);margin-top:2px}
 
@@ -143,20 +171,79 @@
 
   <!-- LOGIN -->
   <div id="sl" class="screen active">
-    <div class="header">
-      <div class="header-logo">🏆</div>
-      <div>
-        <h1>Prode Mundial 2026</h1>
-        <p>USA · México · Canadá &nbsp;·&nbsp; 11 jun – 19 jul</p>
+    <div class="hero">
+      <div class="hero-aura"></div>
+      <div class="hero-trophy">
+        <svg viewBox="0 0 120 160" width="115" height="153" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#fff4cc"/>
+              <stop offset="30%" stop-color="#f5c542"/>
+              <stop offset="60%" stop-color="#e0a814"/>
+              <stop offset="100%" stop-color="#9c6f08"/>
+            </linearGradient>
+            <linearGradient id="goldDark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#d4a017"/>
+              <stop offset="100%" stop-color="#7a5806"/>
+            </linearGradient>
+            <radialGradient id="globe" cx="40%" cy="35%" r="70%">
+              <stop offset="0%" stop-color="#fff4cc"/>
+              <stop offset="55%" stop-color="#f5c542"/>
+              <stop offset="100%" stop-color="#b8860b"/>
+            </radialGradient>
+          </defs>
+
+          <!-- Globo terráqueo arriba -->
+          <circle cx="60" cy="26" r="18" fill="url(#globe)" stroke="#9c6f08" stroke-width="1"/>
+          <!-- Meridianos y paralelos -->
+          <ellipse cx="60" cy="26" rx="7" ry="18" fill="none" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
+          <ellipse cx="60" cy="26" rx="18" ry="7" fill="none" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
+          <line x1="42" y1="26" x2="78" y2="26" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
+          <line x1="60" y1="8" x2="60" y2="44" stroke="#9c6f08" stroke-width="1" opacity="0.6"/>
+          <!-- Brillo del globo -->
+          <ellipse cx="53" cy="19" rx="5" ry="6" fill="#fffef5" opacity="0.45"/>
+
+          <!-- Soporte del globo (figuras estilizadas que sostienen) -->
+          <path d="M52 42 Q54 54 58 58 L62 58 Q66 54 68 42 Z" fill="url(#goldDark)"/>
+          <path d="M55 43 L54 56 M65 43 L66 56" stroke="#fff4cc" stroke-width="0.8" opacity="0.4"/>
+
+          <!-- Copa principal -->
+          <path d="M44 58 L76 58 Q74 80 60 92 Q46 80 44 58 Z" fill="url(#gold)"/>
+          <!-- Asas curvas -->
+          <path d="M44 60 Q26 62 28 78 Q30 90 45 86" fill="none" stroke="url(#goldDark)" stroke-width="5.5" stroke-linecap="round"/>
+          <path d="M76 60 Q94 62 92 78 Q90 90 75 86" fill="none" stroke="url(#goldDark)" stroke-width="5.5" stroke-linecap="round"/>
+
+          <!-- Cuello -->
+          <path d="M54 92 L66 92 L64 108 L56 108 Z" fill="url(#goldDark)"/>
+
+          <!-- Base escalonada -->
+          <path d="M46 108 L74 108 L71 120 L49 120 Z" fill="url(#gold)"/>
+          <rect x="44" y="122" width="32" height="9" rx="2" fill="url(#goldDark)"/>
+          <rect x="38" y="133" width="44" height="12" rx="3" fill="url(#gold)"/>
+          <rect x="34" y="147" width="52" height="8" rx="2" fill="url(#goldDark)"/>
+
+          <!-- Brillo vertical de la copa -->
+          <path d="M50 60 L54 60 L52 86 Q51 87 50 86 Z" fill="#fffef5" opacity="0.4"/>
+          <!-- Placa con estrellas (campeón) -->
+          <circle cx="54" cy="138" r="1.6" fill="#fff4cc"/>
+          <circle cx="60" cy="138" r="1.6" fill="#fff4cc"/>
+          <circle cx="66" cy="138" r="1.6" fill="#fff4cc"/>
+        </svg>
+      </div>
+      <div class="hero-text">
+        <div class="hero-welcome">BIENVENIDOS</div>
+        <h1 class="hero-title">PRODE MUNDIALISTA</h1>
+        <div class="hero-edition">EDICIÓN LBDB</div>
+        <div class="hero-sub">MUNDIAL 2026 · USA · MÉXICO · CANADÁ</div>
       </div>
     </div>
-    <div class="card">
-      <div style="font-size:15px;font-weight:600;margin-bottom:1rem">Ingresar al prode</div>
-      <div style="margin-bottom:10px"><div class="label">Tu nombre</div><input type="text" id="ln" placeholder="Ej: Matías"></div>
-      <div style="margin-bottom:12px"><div class="label">Contraseña del prode</div><input type="password" id="lp" placeholder="La que te pasaron" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="card" style="position:relative;z-index:2">
+      <div style="font-size:15px;font-weight:600;margin-bottom:1rem">Iniciar sesión</div>
+      <div style="margin-bottom:10px"><div class="label">Tu nombre</div><input type="text" id="ln"></div>
+      <div style="margin-bottom:12px"><div class="label">Contraseña</div><input type="password" id="lp" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="err" id="le"></div>
-      <button class="btn btn-primary btn-full" onclick="doLogin()">Entrar →</button>
-      <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text2)">¿Sos el organizador? <button class="btn btn-sm" onclick="go('adml')">Acceso admin</button></div>
+      <button class="login-btn" onclick="doLogin()">Entrar →</button>
+      <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--text2)">¿Sos el organizador? <button class="login-admin-btn" onclick="go('adml')">Acceso admin</button></div>
     </div>
   </div>
 
