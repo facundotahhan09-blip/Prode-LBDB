@@ -354,9 +354,9 @@ function renderProns(elId, mode) {
         </div>
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-          <input type="number" min="0" max="30" value="${ph ?? ''}" id="m${mode}${m.id}h" ${hasR && !isA ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${hasR && !isA ? 'disabled' : ''}>
           <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
-          <input type="number" min="0" max="30" value="${pa ?? ''}" id="m${mode}${m.id}a" ${hasR && !isA ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${hasR && !isA ? 'disabled' : ''}>
           <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
         </div>
       </div>`;
