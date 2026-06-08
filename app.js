@@ -242,7 +242,7 @@ function st(id, btn) {
   if (id === 'tt' || id === 'at') renderTbl(id === 'at' ? 'atblcont' : 'tblcont');
   if (id === 'tr') renderMyRes();
   if (id === 'te') renderElim('elimu', false);
-  if (id === 'ae2') renderElim('elima', true);
+  if (id === 'ae2') renderElim('elima', false);
   if (id === 'apa') renderPart();
 }
 
@@ -458,7 +458,7 @@ function renderAdm() {
   document.getElementById('cfp').value = cache.config.player_pass || '';
   document.getElementById('cfa').value = cache.config.admin_pass || '';
   renderTbl('atblcont');
-  renderElim('elima', true);
+  renderElim('elima', false);
 }
 
 const JORNADAS = [
@@ -479,12 +479,21 @@ function buildGT(elId, mode) {
     b.onclick = () => { selJ[mode] = j.num; buildGT(elId, mode); renderProns(mode === 'u' ? 'pu' : 'pa', mode); };
     el.appendChild(b);
   });
+  const be = document.createElement('button');
+  be.className = 'gbt' + (selJ[mode] === 'elim' ? ' on' : '');
+  be.innerHTML = `<strong>🏆 Fase Eliminatoria</strong> <span style="font-size:11px;opacity:.7">desde 28 jun</span>`;
+  be.onclick = () => { selJ[mode] = 'elim'; buildGT(elId, mode); renderProns(mode === 'u' ? 'pu' : 'pa', mode); };
+  el.appendChild(be);
 }
 
 function renderProns(elId, mode) {
+  const isA = mode === 'a';
+  if (selJ[mode] === 'elim') {
+    renderBracketInto(elId, isA, mode === 'u' ? 'pred' : 'adminres');
+    return;
+  }
   const jNum = selJ[mode];
   const ms = MATCHES.filter(m => m.j === jNum);
-  const isA = mode === 'a';
 
   // Agrupar por fecha para mostrar separadores de día
   const byDate = {};
@@ -742,55 +751,81 @@ function bracketScore(mid) {
 }
 
 // Render del bracket para el jugador (te=elimu) o admin (ae2=elima)
+// renderElim ahora se usa SOLO para la pestaña "Eliminatorias" = modo REAL (solo lectura)
 function renderElim(id, isA) {
   const complete = allGroupsComplete();
   let html = '';
 
-  // Aviso de estado
-  if (!complete) {
+  if (!complete && !cache.bracketConfirmed) {
     html += `<div class="card" style="text-align:center;padding:1.25rem">
-      <div style="font-size:13px;color:var(--text2)">⏳ La fase eliminatoria se habilita cuando termina la fase de grupos.</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:6px">Los cruces se irán definiendo automáticamente según las posiciones finales de cada grupo.</div>
+      <div style="font-size:13px;color:var(--text2)">⏳ La fase eliminatoria arranca cuando termina la fase de grupos.</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Acá vas a poder seguir el cuadro real del Mundial a medida que avanza.</div>
     </div>`;
+    document.getElementById(id).innerHTML = html;
+    return;
   }
 
-  if (isA) {
-    // Panel admin: botón de confirmar clasificados + edición de resultados
+  html += `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
+    <div class="bk-sub">Resultados reales · desliza horizontalmente →</div></div>`;
+  html += renderBracketColumns('real');
+  document.getElementById(id).innerHTML = html;
+}
+
+// Render del bracket dentro de un contenedor, según el modo:
+//  'pred'     → jugador predice (pestaña pronósticos)
+//  'adminres' → admin carga resultados (pestaña pronósticos)
+//  'real'     → solo lectura (pestaña Eliminatorias)
+function renderBracketInto(elId, isAdmin, modo) {
+  const complete = allGroupsComplete();
+  let html = '';
+
+  // Encabezado admin con confirmación de clasificados (solo en modo adminres)
+  if (modo === 'adminres') {
     html += `<div class="card" style="margin-bottom:12px">
       <div style="font-size:13px;font-weight:600;margin-bottom:8px">Clasificación a eliminatorias</div>`;
     if (!complete) {
-      html += `<div style="font-size:12px;color:var(--text3)">Faltan cargar resultados de la fase de grupos.</div>`;
+      html += `<div style="font-size:12px;color:var(--text3)">Faltan cargar resultados de la fase de grupos para armar el cuadro.</div>`;
     } else if (!cache.bracketConfirmed) {
-      html += `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Los grupos están completos. Confirmá los clasificados para fijar los cruces (1°, 2° y 8 mejores terceros se asignan automáticamente según FIFA).</div>
-        <button class="btn btn-primary btn-full" onclick="confirmGroups()">✓ Confirmar clasificados y armar bracket</button>`;
+      html += `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Los grupos están completos. Confirmá los clasificados para fijar los cruces (1°, 2° y 8 mejores terceros automáticos según FIFA).</div>
+        <button class="btn btn-primary btn-full" onclick="confirmGroups()">✓ Confirmar clasificados y armar cuadro</button>`;
     } else {
-      html += `<div style="font-size:12px;color:var(--green);margin-bottom:10px">✓ Clasificados confirmados. Podés cargar los resultados de cada cruce abajo.</div>
+      html += `<div style="font-size:12px;color:var(--green);margin-bottom:10px">✓ Clasificados confirmados. Cargá los resultados de cada cruce abajo.</div>
         <button class="btn btn-sm" onclick="reopenGroups()">↺ Reabrir / recalcular clasificados</button>`;
     }
     html += `</div>`;
   }
 
-  // El bracket visual (siempre que haya grupos completos o esté confirmado)
+  // Aviso para el jugador si todavía no arrancó
+  if (modo === 'pred' && !complete && !cache.bracketConfirmed) {
+    html += `<div class="card" style="text-align:center;padding:1.25rem">
+      <div style="font-size:13px;color:var(--text2)">⏳ Vas a poder predecir la fase eliminatoria cuando se definan los cruces.</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Cada cruce se habilita en cuanto se conocen los dos equipos. Podés modificar hasta que arranca el partido.</div>
+    </div>`;
+    document.getElementById(elId).innerHTML = html;
+    return;
+  }
+
+  // El cuadro
   if (complete || cache.bracketConfirmed) {
     html += `<div class="bk-head"><div class="bk-title">🏆 FASE ELIMINATORIA</div>
       <div class="bk-sub">Desliza horizontalmente para ver todas las rondas →</div></div>`;
-    html += renderBracketColumns(isA);
+    html += renderBracketColumns(modo);
   }
 
   // Botones de guardado
-  if (isA && (complete || cache.bracketConfirmed)) {
-    html += `<button class="btn btn-primary btn-full" onclick="saveBracketResults()" style="margin-top:10px">✓ Guardar resultados del bracket</button><div class="ok" id="bmsg"></div>`;
+  if (modo === 'adminres' && (complete || cache.bracketConfirmed)) {
+    html += `<button class="btn btn-primary btn-full" onclick="saveBracketResults()" style="margin-top:10px">✓ Guardar resultados del cuadro</button><div class="ok" id="bmsg"></div>`;
   }
-  if (!isA && (complete || cache.bracketConfirmed)) {
-    html += `<div style="font-size:12px;color:var(--text2);margin:10px 0 8px">Predicí el marcador de cada cruce. Podés modificar hasta que arranca el partido. Puntos: 3 exacto · 1 ganador · 0 nada.</div>
+  if (modo === 'pred' && (complete || cache.bracketConfirmed)) {
+    html += `<div style="font-size:12px;color:var(--text2);margin:10px 0 8px">Predicí el marcador de cada cruce ya definido. Podés modificar hasta que arranca el partido. Puntos: 3 exacto · 1 ganador · 0 nada.</div>
       <button class="btn btn-primary btn-full" onclick="saveBracketProns()">💾 Guardar mis predicciones</button><div class="ok" id="bpmsg"></div>`;
   }
 
-  document.getElementById(id).innerHTML = html;
+  document.getElementById(elId).innerHTML = html;
 }
 
 // Construye las columnas del bracket con líneas conectoras
-function renderBracketColumns(isA) {
+function renderBracketColumns(modo) {
   let html = `<div class="bk-scroll"><div class="bk-rounds">`;
   BRACKET_ROUNDS.forEach((round, ri) => {
     const matches = BRACKET[round.key];
@@ -798,7 +833,7 @@ function renderBracketColumns(isA) {
     html += `<div class="bk-col${isFinal?' bk-final-col':''}">
       <div class="bk-col-title">${round.name}</div>`;
     matches.forEach(m => {
-      html += renderBracketMatch(m, isA);
+      html += renderBracketMatch(m, modo);
     });
     if (isFinal) {
       const champ = cache.bracketResults['FINAL']?.winner;
@@ -806,7 +841,6 @@ function renderBracketColumns(isA) {
         <div class="bk-champ-team">${champ ? fl(champ)+' <b>'+champ+'</b>' : '<span class="bk-slot">A definir</span>'}</div></div>`;
     }
     html += `</div>`;
-    // conector entre columnas (excepto después de la final)
     if (ri < BRACKET_ROUNDS.length - 1) {
       const n = matches.length;
       html += `<div class="bk-conn"><div class="bk-conn-title"></div><div class="bk-conn-body">`;
@@ -820,8 +854,8 @@ function renderBracketColumns(isA) {
   return html;
 }
 
-// Render de un partido individual del bracket
-function renderBracketMatch(m, isA) {
+// Render de un partido individual del bracket según el modo
+function renderBracketMatch(m, modo) {
   const homeTeam = resolveSlot(m.home);
   const awayTeam = resolveSlot(m.away);
   const homeLbl = homeTeam || slotLabel(m.home);
@@ -829,42 +863,35 @@ function renderBracketMatch(m, isA) {
   const r = bracketScore(m.id);
   const started = matchStarted(m.id);
   const myP = cache.bracketProns[m.id];
+  const teamsKnown = homeTeam && awayTeam;
 
   let homeCls = '', awayCls = '';
   if (r && r.winner) {
     if (r.winner === homeTeam) homeCls = 'bk-win';
     if (r.winner === awayTeam) awayCls = 'bk-win';
   }
-
-  // Marcador a mostrar
   const fmtScore = (goals, pens) => {
     if (goals === null || goals === undefined) return '';
     return pens !== null && pens !== undefined ? `${goals}<span class="bk-pen">(${pens})</span>` : `${goals}`;
   };
+  const flagImg = t => `<img src="https://flagcdn.com/w40/${FLAGS[t]||'xx'}.png" onerror="this.style.visibility='hidden'">`;
 
-  if (isA) {
-    // Admin: inputs para cargar resultado
-    const teamsKnown = homeTeam && awayTeam;
+  // MODO ADMIN: cargar resultados reales
+  if (modo === 'adminres') {
     return `<div class="bk-pair"><div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} · ${m.sede}</div>
-      <div class="bk-team ${homeCls}">
-        <img src="https://flagcdn.com/w40/${FLAGS[homeTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
-        <span class="nm">${homeLbl}</span>
-        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">
-      </div>
-      <div class="bk-team ${awayCls}">
-        <img src="https://flagcdn.com/w40/${FLAGS[awayTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
-        <span class="nm">${awayLbl}</span>
-        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}a" value="${r?.away_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">
-      </div>
-      <div class="bk-pens">Penales (si hubo empate): 
+      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
+      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}a" value="${r?.away_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
+      <div class="bk-pens">Penales (si empatan): 
         <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}ph" value="${r?.home_pens??''}" placeholder="L">
-        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}pa" value="${r?.away_pens??''}" placeholder="V">
-      </div>
+        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}pa" value="${r?.away_pens??''}" placeholder="V"></div>
     </div></div>`;
-  } else {
-    // Jugador: inputs de predicción (bloqueados si arrancó) + resultado real
-    const teamsKnown = homeTeam && awayTeam;
+  }
+
+  // MODO PREDICCIÓN: jugador pone su marcador
+  if (modo === 'pred') {
     let badge = '';
     if (r && myP) {
       const pp = scoreBracketPts(m.id, myP.h, myP.a);
@@ -875,19 +902,33 @@ function renderBracketMatch(m, isA) {
     const lockIcon = started ? ' 🔒' : '';
     return `<div class="bk-pair"><div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}${lockIcon} ${badge}</div>
-      <div class="bk-team ${homeCls}">
-        <img src="https://flagcdn.com/w40/${FLAGS[homeTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
-        <span class="nm">${homeLbl}</span>
-        ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}
-      </div>
-      <div class="bk-team ${awayCls}">
-        <img src="https://flagcdn.com/w40/${FLAGS[awayTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
-        <span class="nm">${awayLbl}</span>
-        ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}
-      </div>
+      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+        ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
+      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+        ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
       ${myP && !r ? `<div class="bk-mypred">Mi predicción: ${myP.h}-${myP.a}</div>` : ''}
     </div></div>`;
   }
+
+  // MODO REAL: solo lectura (lo que va pasando)
+  let myInfo = '';
+  if (myP) {
+    if (r) {
+      const pp = scoreBracketPts(m.id, myP.h, myP.a);
+      let b = pp === 3 ? 'bex' : pp === 1 ? 'bwi' : 'bno';
+      myInfo = `<div class="bk-mypred">Predijiste ${myP.h}-${myP.a} <span class="badge ${b}">${pp>0?'+'+pp:'0'}</span></div>`;
+    } else {
+      myInfo = `<div class="bk-mypred">Tu predicción: ${myP.h}-${myP.a}</div>`;
+    }
+  }
+  return `<div class="bk-pair"><div class="bk-match">
+    <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}</div>
+    <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+      <span class="sc">${r ? fmtScore(r.home_goals,r.home_pens) : '—'}</span></div>
+    <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+      <span class="sc">${r ? fmtScore(r.away_goals,r.away_pens) : '—'}</span></div>
+    ${myInfo}
+  </div></div>`;
 }
 
 // Puntos de una predicción de bracket (mismo criterio clásico)
@@ -910,7 +951,7 @@ async function confirmGroups() {
   await dbUpsert('bracket_config', { id: 1, groups_confirmed: true });
   cache.bracketSlots = auto;
   cache.bracketConfirmed = true;
-  renderElim('elima', true);
+  renderProns('pa', 'a');
 }
 
 async function reopenGroups() {
@@ -918,7 +959,7 @@ async function reopenGroups() {
   const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
   await dbUpsert('bracket_slots', rows);
   cache.bracketSlots = auto;
-  renderElim('elima', true);
+  renderProns('pa', 'a');
 }
 
 // Admin guarda resultados del bracket (calcula ganador y avanza)
@@ -953,7 +994,7 @@ async function saveBracketResults() {
   });
   if (toSave.length) await dbUpsert('bracket_results', toSave);
   await loadCache();
-  renderElim('elima', true);
+  renderProns('pa', 'a');
   const msg = document.getElementById('bmsg');
   if (msg) { msg.textContent = '✓ Resultados guardados'; setTimeout(() => msg.textContent = '', 2500); }
 }
