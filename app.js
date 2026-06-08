@@ -136,28 +136,80 @@ const MATCHES = [
   {id:72,j:3,g:'L',h:'Croacia',a:'Ghana',date:'Sáb 27 jun',time:'18:00',sede:'Lincoln Financial, Filadelfia'}
 ];
 
-const ELIM_ROUNDS = [
-  {name:'16avos de final', matches:[
-    {id:'e1',date:'Dom 28 jun'},{id:'e2',date:'Dom 28 jun'},{id:'e3',date:'Lun 29 jun'},{id:'e4',date:'Lun 29 jun'},
-    {id:'e5',date:'Mar 30 jun'},{id:'e6',date:'Mar 30 jun'},{id:'e7',date:'Mié 1 jul'},{id:'e8',date:'Mié 1 jul'},
-    {id:'e9',date:'Jue 2 jul'},{id:'e10',date:'Jue 2 jul'},{id:'e11',date:'Vie 3 jul'},{id:'e12',date:'Vie 3 jul'},
-    {id:'e13',date:'Sáb 4 jul'},{id:'e14',date:'Sáb 4 jul'},{id:'e15',date:'Dom 5 jul'},{id:'e16',date:'Dom 5 jul'}
-  ]},
-  {name:'Octavos de final', matches:[
-    {id:'o1',date:'Lun 6 jul'},{id:'o2',date:'Lun 6 jul'},{id:'o3',date:'Mar 7 jul'},{id:'o4',date:'Mar 7 jul'},
-    {id:'o5',date:'Mié 8 jul'},{id:'o6',date:'Mié 8 jul'},{id:'o7',date:'Jue 9 jul'},{id:'o8',date:'Jue 9 jul'}
-  ]},
-  {name:'Cuartos de final', matches:[
-    {id:'q1',date:'Sáb 11 jul'},{id:'q2',date:'Sáb 11 jul'},{id:'q3',date:'Dom 12 jul'},{id:'q4',date:'Dom 12 jul'}
-  ]},
-  {name:'Semifinales', matches:[{id:'s1',date:'Mar 14 jul'},{id:'s2',date:'Mié 15 jul'}]},
-  {name:'Final', matches:[{id:'f1',date:'Dom 19 jul · MetLife, NJ'}]}
+// ── ESTRUCTURA DEL BRACKET (Mundial 2026, formato 48 equipos) ──────────────────
+// Cada slot usa etiquetas oficiales FIFA: 1A=ganador grupo A, 2B=segundo grupo B,
+// 3rd-XXXXX = uno de los 8 mejores terceros (de la combinación de grupos indicada)
+const BRACKET = {
+  r32: [ // Ronda de 32 (16avos) — cruces oficiales Anexo C FIFA
+    {id:'R32-1', home:'2A', away:'2B',  date:'Dom 28 jun', time:'14:00', sede:'Boston'},
+    {id:'R32-2', home:'1E', away:'3-ABCDF', date:'Dom 28 jun', time:'17:00', sede:'Filadelfia'},
+    {id:'R32-3', home:'1F', away:'2C',  date:'Lun 29 jun', time:'14:00', sede:'Los Ángeles'},
+    {id:'R32-4', home:'1C', away:'2F',  date:'Lun 29 jun', time:'21:00', sede:'Houston'},
+    {id:'R32-5', home:'1I', away:'3-CDFGH', date:'Mar 30 jun', time:'14:00', sede:'Nueva Jersey'},
+    {id:'R32-6', home:'2E', away:'2I',  date:'Mar 30 jun', time:'21:00', sede:'Dallas'},
+    {id:'R32-7', home:'1A', away:'3-CEFHI', date:'Mié 1 jul', time:'14:00', sede:'Guadalajara'},
+    {id:'R32-8', home:'1L', away:'3-EHIJK', date:'Mié 1 jul', time:'21:00', sede:'Atlanta'},
+    {id:'R32-9', home:'1D', away:'3-BEFIJ', date:'Jue 2 jul', time:'14:00', sede:'San Francisco'},
+    {id:'R32-10',home:'1G', away:'3-AEHIJ', date:'Jue 2 jul', time:'21:00', sede:'Seattle'},
+    {id:'R32-11',home:'2K', away:'2L',  date:'Vie 3 jul', time:'14:00', sede:'Miami'},
+    {id:'R32-12',home:'1H', away:'2J',  date:'Vie 3 jul', time:'21:00', sede:'Kansas City'},
+    {id:'R32-13',home:'1B', away:'3-EFGIJ', date:'Sáb 4 jul', time:'14:00', sede:'Vancouver'},
+    {id:'R32-14',home:'1J', away:'2H',  date:'Sáb 4 jul', time:'21:00', sede:'CDMX'},
+    {id:'R32-15',home:'1K', away:'3-DEIJL', date:'Dom 5 jul', time:'14:00', sede:'Toronto'},
+    {id:'R32-16',home:'2D', away:'2G',  date:'Dom 5 jul', time:'21:00', sede:'Monterrey'}
+  ],
+  r16: [ // Octavos — se nutren de los ganadores de R32
+    {id:'R16-1', home:'W-R32-1', away:'W-R32-2', date:'Lun 6 jul', time:'16:00', sede:'Filadelfia'},
+    {id:'R16-2', home:'W-R32-3', away:'W-R32-4', date:'Lun 6 jul', time:'21:00', sede:'Houston'},
+    {id:'R16-3', home:'W-R32-5', away:'W-R32-6', date:'Mar 7 jul', time:'16:00', sede:'Dallas'},
+    {id:'R16-4', home:'W-R32-7', away:'W-R32-8', date:'Mar 7 jul', time:'21:00', sede:'Atlanta'},
+    {id:'R16-5', home:'W-R32-9', away:'W-R32-10', date:'Mié 8 jul', time:'16:00', sede:'Seattle'},
+    {id:'R16-6', home:'W-R32-11', away:'W-R32-12', date:'Mié 8 jul', time:'21:00', sede:'Miami'},
+    {id:'R16-7', home:'W-R32-13', away:'W-R32-14', date:'Jue 9 jul', time:'16:00', sede:'Vancouver'},
+    {id:'R16-8', home:'W-R32-15', away:'W-R32-16', date:'Jue 9 jul', time:'21:00', sede:'Toronto'}
+  ],
+  qf: [ // Cuartos
+    {id:'QF-1', home:'W-R16-1', away:'W-R16-2', date:'Sáb 11 jul', time:'16:00', sede:'Boston'},
+    {id:'QF-2', home:'W-R16-3', away:'W-R16-4', date:'Sáb 11 jul', time:'21:00', sede:'Los Ángeles'},
+    {id:'QF-3', home:'W-R16-5', away:'W-R16-6', date:'Dom 12 jul', time:'16:00', sede:'Kansas City'},
+    {id:'QF-4', home:'W-R16-7', away:'W-R16-8', date:'Dom 12 jul', time:'21:00', sede:'Miami'}
+  ],
+  sf: [ // Semifinales
+    {id:'SF-1', home:'W-QF-1', away:'W-QF-2', date:'Mar 14 jul', time:'16:00', sede:'Dallas'},
+    {id:'SF-2', home:'W-QF-3', away:'W-QF-4', date:'Mié 15 jul', time:'16:00', sede:'Atlanta'}
+  ],
+  final: [
+    {id:'FINAL', home:'W-SF-1', away:'W-SF-2', date:'Dom 19 jul', time:'16:00', sede:'MetLife, Nueva Jersey'}
+  ]
+};
+const BRACKET_ROUNDS = [
+  {key:'r32', name:'16avos'},
+  {key:'r16', name:'Octavos'},
+  {key:'qf', name:'Cuartos'},
+  {key:'sf', name:'Semifinal'},
+  {key:'final', name:'Final'}
+];
+const ALL_BRACKET_MATCHES = [...BRACKET.r32, ...BRACKET.r16, ...BRACKET.qf, ...BRACKET.sf, ...BRACKET.final];
+
+// Las 5 combinaciones de grupos para cada slot de tercero (orden de prioridad
+// de asignación según el orden de los 16avos). Cada cruce de tercero acepta uno
+// de los grupos listados; se asigna automáticamente buscando el mejor calce.
+const THIRD_SLOTS = [
+  {id:'3-ABCDF', groups:['A','B','C','D','F']},
+  {id:'3-CDFGH', groups:['C','D','F','G','H']},
+  {id:'3-CEFHI', groups:['C','E','F','H','I']},
+  {id:'3-EHIJK', groups:['E','H','I','J','K']},
+  {id:'3-BEFIJ', groups:['B','E','F','I','J']},
+  {id:'3-AEHIJ', groups:['A','E','H','I','J']},
+  {id:'3-EFGIJ', groups:['E','F','G','I','J']},
+  {id:'3-DEIJL', groups:['D','E','I','J','L']}
 ];
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 
 let CU = null, IA = false;
-let cache = { results: {}, elim: {}, players: [], prons: {}, elimProns: {}, config: {} };
+let cache = { results: {}, players: [], prons: {}, config: {},
+              bracketResults: {}, bracketProns: {}, bracketSlots: {}, bracketConfirmed: false };
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -233,28 +285,33 @@ function doOut() {
 // ── CACHE ────────────────────────────────────────────────────────────────────
 
 async function loadCache() {
-  const [res, elim, players, cfg] = await Promise.all([
+  const [res, players, cfg, bres, bslots, bcfg] = await Promise.all([
     dbGet('results', 'select=match_id,home_goals,away_goals'),
-    dbGet('elim_results', 'select=match_id,home,away,winner'),
     dbGet('players', 'select=name'),
-    dbGet('config', 'id=eq.1')
+    dbGet('config', 'id=eq.1'),
+    dbGet('bracket_results', 'select=match_id,home_team,away_team,home_goals,away_goals,home_pens,away_pens,winner,kickoff'),
+    dbGet('bracket_slots', 'select=slot,team'),
+    dbGet('bracket_config', 'id=eq.1')
   ]);
   cache.results = {};
   res.forEach(r => cache.results[r.match_id] = r);
-  cache.elim = {};
-  elim.forEach(e => cache.elim[e.match_id] = e);
   cache.players = players.map(p => p.name);
   cache.config = cfg[0] || {};
+  cache.bracketResults = {};
+  bres.forEach(b => cache.bracketResults[b.match_id] = b);
+  cache.bracketSlots = {};
+  bslots.forEach(s => cache.bracketSlots[s.slot] = s.team);
+  cache.bracketConfirmed = bcfg[0]?.groups_confirmed || false;
 
   if (CU) {
-    const [prons, ep] = await Promise.all([
+    const [prons, bprons] = await Promise.all([
       dbGet('predictions', `player_name=eq.${encodeURIComponent(CU)}`),
-      dbGet('elim_predictions', `player_name=eq.${encodeURIComponent(CU)}`)
+      dbGet('bracket_predictions', `player_name=eq.${encodeURIComponent(CU)}`)
     ]);
     cache.prons = {};
     prons.forEach(p => cache.prons[p.match_id] = { h: p.home_goals, a: p.away_goals });
-    cache.elimProns = {};
-    ep.forEach(p => cache.elimProns[p.match_id] = p.winner);
+    cache.bracketProns = {};
+    bprons.forEach(p => cache.bracketProns[p.match_id] = { h: p.home_goals, a: p.away_goals });
   }
 }
 
@@ -265,13 +322,124 @@ async function loadAllProns() {
     if (!byPlayer[p.player_name]) byPlayer[p.player_name] = {};
     byPlayer[p.player_name][p.match_id] = { h: p.home_goals, a: p.away_goals };
   });
-  const allEP = await dbGet('elim_predictions', 'select=player_name,match_id,winner');
-  const epByPlayer = {};
-  allEP.forEach(p => {
-    if (!epByPlayer[p.player_name]) epByPlayer[p.player_name] = {};
-    epByPlayer[p.player_name][p.match_id] = p.winner;
+  const allBP = await dbGet('bracket_predictions', 'select=player_name,match_id,home_goals,away_goals');
+  const bpByPlayer = {};
+  allBP.forEach(p => {
+    if (!bpByPlayer[p.player_name]) bpByPlayer[p.player_name] = {};
+    bpByPlayer[p.player_name][p.match_id] = { h: p.home_goals, a: p.away_goals };
   });
-  return { byPlayer, epByPlayer };
+  return { byPlayer, bpByPlayer };
+}
+
+// ── LÓGICA DE CLASIFICACIÓN DEL BRACKET ────────────────────────────────────────
+
+// Calcula la tabla ordenada de un grupo a partir de los resultados cargados
+function computeGroupTable(g) {
+  const teams = GRUPOS[g];
+  const st = {};
+  teams.forEach(t => st[t] = { team:t, pj:0, g:0, e:0, p:0, gf:0, gc:0 });
+  MATCHES.filter(m => m.g === g).forEach(m => {
+    const r = cache.results[m.id];
+    if (!r) return;
+    const h = st[m.h], a = st[m.a];
+    h.pj++; a.pj++; h.gf += r.home_goals; h.gc += r.away_goals;
+    a.gf += r.away_goals; a.gc += r.home_goals;
+    if (r.home_goals > r.away_goals) { h.g++; a.p++; }
+    else if (r.home_goals < r.away_goals) { a.g++; h.p++; }
+    else { h.e++; a.e++; }
+  });
+  return Object.values(st).map(s => ({ ...s, dg: s.gf - s.gc, pts: s.g*3 + s.e, grp: g }))
+    .sort((a,b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+}
+
+// ¿Están todos los partidos de grupos cargados?
+function allGroupsComplete() {
+  return MATCHES.every(m => cache.results[m.id]);
+}
+
+// Devuelve los 8 mejores terceros (ordenados) y de qué grupos son
+function bestThirds() {
+  const thirds = Object.keys(GRUPOS).map(g => {
+    const t = computeGroupTable(g)[2];
+    return { ...t, grp: g };
+  });
+  thirds.sort((a,b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+  return thirds.slice(0, 8);
+}
+
+// Asigna automáticamente los 8 mejores terceros a sus slots.
+// Estrategia: backtracking — cada slot acepta terceros de ciertos grupos.
+function assignThirds() {
+  const top8 = bestThirds();
+  const byGroup = {}; top8.forEach(t => byGroup[t.grp] = t);
+  const qualifiedGroups = top8.map(t => t.grp);
+  // slots en orden; cada uno acepta uno de sus 5 grupos posibles
+  const slots = THIRD_SLOTS.map(s => ({ id:s.id, opts: s.groups.filter(g => qualifiedGroups.includes(g)) }));
+  const result = {};
+  const usedGroups = new Set();
+  // backtracking para encontrar asignación válida (cada grupo a un solo slot)
+  function solve(i) {
+    if (i === slots.length) return true;
+    // ordenar opciones por menos flexibilidad ya está implícito; probamos cada grupo libre
+    for (const g of slots[i].opts) {
+      if (!usedGroups.has(g)) {
+        usedGroups.add(g); result[slots[i].id] = g;
+        if (solve(i+1)) return true;
+        usedGroups.delete(g); delete result[slots[i].id];
+      }
+    }
+    return false;
+  }
+  solve(0);
+  // devuelve {slotId: team}
+  const out = {};
+  Object.entries(result).forEach(([slot, g]) => { out[slot] = byGroup[g].team; });
+  return out;
+}
+
+// Calcula automáticamente todos los slots del bracket (1°, 2° y terceros)
+function computeAutoSlots() {
+  const slots = {};
+  Object.keys(GRUPOS).forEach(g => {
+    const tbl = computeGroupTable(g);
+    slots['1'+g] = tbl[0].team;
+    slots['2'+g] = tbl[1].team;
+  });
+  Object.assign(slots, assignThirds());
+  return slots;
+}
+
+// Resuelve qué equipo ocupa un slot dado (ej '1A', '2B', '3-ABCDF', 'W-R32-1')
+// Usa primero los slots confirmados/override del admin (cache.bracketSlots),
+// y para ganadores (W-) busca el resultado del partido correspondiente.
+function resolveSlot(slot) {
+  if (!slot) return null;
+  if (slot.startsWith('W-')) {
+    const mid = slot.slice(2);
+    const r = cache.bracketResults[mid];
+    return r?.winner || null;
+  }
+  // slot de grupo o tercero
+  if (cache.bracketSlots[slot]) return cache.bracketSlots[slot];
+  // si el admin aún no confirmó pero los grupos están completos, calcular en vivo
+  if (allGroupsComplete()) {
+    const auto = computeAutoSlots();
+    return auto[slot] || null;
+  }
+  return null;
+}
+
+// Etiqueta legible de un slot cuando todavía no hay equipo
+function slotLabel(slot) {
+  if (!slot) return '—';
+  if (slot.startsWith('W-')) {
+    const mid = slot.slice(2);
+    const names = {R32:'16avos',R16:'Octavos',QF:'Cuartos',SF:'Semi'};
+    const parts = mid.split('-');
+    return 'Ganador ' + (names[parts[0]]||parts[0]) + ' ' + parts[2];
+  }
+  if (slot.startsWith('3-')) return '3° (' + slot.slice(2).split('').join('/') + ')';
+  return slot[0] + '° Grupo ' + slot.slice(1);
 }
 
 // ── RENDER USER ──────────────────────────────────────────────────────────────
@@ -458,20 +626,26 @@ function renderGrpStandings() {
 
 async function renderTbl(id) {
   document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
-  const { byPlayer, epByPlayer } = await loadAllProns();
+  const { byPlayer, bpByPlayer } = await loadAllProns();
   const players = cache.players;
   const scores = {};
   players.forEach(u => {
     let tot = 0, ex = 0, wi = 0;
+    // Puntos fase de grupos
     MATCHES.forEach(m => {
       const p = byPlayer[u]?.[m.id];
       const pp = p ? pts(m.id, p.h, p.a) : 0;
       if (pp === 3) { tot += 3; ex++; }
       else if (pp === 1) { tot += 1; wi++; }
     });
+    // Puntos fase eliminatoria (mismo criterio: 3 exacto / 1 ganador)
     let ep = 0;
-    Object.entries(epByPlayer[u] || {}).forEach(([k, v]) => {
-      if (cache.elim[k]?.winner === v) ep += 5;
+    ALL_BRACKET_MATCHES.forEach(m => {
+      const p = bpByPlayer[u]?.[m.id];
+      if (!p) return;
+      const pp = scoreBracketPts(m.id, p.h, p.a);
+      if (pp === 3) { ep += 3; ex++; }
+      else if (pp === 1) { ep += 1; wi++; }
     });
     scores[u] = { tot: tot + ep, group: tot, elim: ep, ex, wi };
   });
@@ -551,79 +725,256 @@ function renderMyRes() {
   document.getElementById('rescont').innerHTML = html;
 }
 
-// ── ELIMINATORIAS ─────────────────────────────────────────────────────────────
+// ── BRACKET (FASE ELIMINATORIA) ────────────────────────────────────────────────
 
+// Helper: ¿el partido ya arrancó? (bloquea predicciones)
+function matchStarted(mid) {
+  const r = cache.bracketResults[mid];
+  if (r?.kickoff) return new Date(r.kickoff) <= new Date();
+  return false; // si no hay kickoff definido, se puede predecir
+}
+
+// Marcador final de un partido del bracket (para mostrar)
+function bracketScore(mid) {
+  const r = cache.bracketResults[mid];
+  if (!r || r.home_goals === null || r.home_goals === undefined) return null;
+  return r;
+}
+
+// Render del bracket para el jugador (te=elimu) o admin (ae2=elima)
 function renderElim(id, isA) {
+  const complete = allGroupsComplete();
   let html = '';
-  ELIM_ROUNDS.forEach(r => {
-    html += `<div class="elim-section"><div class="elim-title">${r.name}</div>`;
-    r.matches.forEach(em => {
-      const ed = cache.elim[em.id] || {};
-      if (isA) {
-        html += `<div class="elim-match">
-          <span style="font-size:11px;color:var(--text3);width:72px;flex-shrink:0">${em.date}</span>
-          <input type="text" placeholder="Local" id="ea${em.id}h" value="${ed.home||''}" style="flex:1;width:auto;font-size:12px">
-          <span style="font-size:11px;color:var(--text3);padding:0 4px">vs</span>
-          <input type="text" placeholder="Visitante" id="ea${em.id}a" value="${ed.away||''}" style="flex:1;width:auto;font-size:12px">
-          <input type="text" placeholder="Ganador" id="ea${em.id}w" value="${ed.winner||''}" style="width:95px;font-size:12px;border-color:rgba(34,197,94,.4)">
-        </div>`;
-      } else {
-        const home = ed.home || '?'; const away = ed.away || '?'; const ok = ed.home && ed.away;
-        const myP = cache.elimProns[em.id] || '';
-        const scored = ed.winner && myP === ed.winner;
-        html += `<div class="elim-match">
-          <span style="font-size:11px;color:var(--text3);width:72px;flex-shrink:0">${em.date}</span>
-          <div class="elim-team"><span style="font-size:16px">${fl(home)}</span>${home}</div>
-          <span style="font-size:11px;color:var(--text3)">vs</span>
-          <div class="elim-team"><span style="font-size:16px">${fl(away)}</span>${away}</div>
-          <input type="text" id="ep${em.id}" value="${myP}" placeholder="ganador" style="width:90px;font-size:12px;${scored?'border-color:rgba(34,197,94,.5)':''}" ${!ok?'disabled':''}>
-          ${scored ? '<span class="badge bex">+5</span>' : ''}
-        </div>`;
-      }
-    });
-    html += '</div>';
-  });
-  if (isA) {
-    html += `<button class="btn btn-primary btn-full" onclick="saveElimRes()">✓ Guardar eliminatorias</button><div class="ok" id="emsg"></div>`;
-  } else {
-    html += `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Acertar el ganador de cada llave = +5 puntos extra</div>
-    <button class="btn btn-primary btn-full" onclick="saveEP()">💾 Guardar pronósticos eliminatorias</button>
-    <div class="ok" id="epmsg"></div>`;
+
+  // Aviso de estado
+  if (!complete) {
+    html += `<div class="card" style="text-align:center;padding:1.25rem">
+      <div style="font-size:13px;color:var(--text2)">⏳ La fase eliminatoria se habilita cuando termina la fase de grupos.</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Los cruces se irán definiendo automáticamente según las posiciones finales de cada grupo.</div>
+    </div>`;
   }
+
+  if (isA) {
+    // Panel admin: botón de confirmar clasificados + edición de resultados
+    html += `<div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">Clasificación a eliminatorias</div>`;
+    if (!complete) {
+      html += `<div style="font-size:12px;color:var(--text3)">Faltan cargar resultados de la fase de grupos.</div>`;
+    } else if (!cache.bracketConfirmed) {
+      html += `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Los grupos están completos. Confirmá los clasificados para fijar los cruces (1°, 2° y 8 mejores terceros se asignan automáticamente según FIFA).</div>
+        <button class="btn btn-primary btn-full" onclick="confirmGroups()">✓ Confirmar clasificados y armar bracket</button>`;
+    } else {
+      html += `<div style="font-size:12px;color:var(--green);margin-bottom:10px">✓ Clasificados confirmados. Podés cargar los resultados de cada cruce abajo.</div>
+        <button class="btn btn-sm" onclick="reopenGroups()">↺ Reabrir / recalcular clasificados</button>`;
+    }
+    html += `</div>`;
+  }
+
+  // El bracket visual (siempre que haya grupos completos o esté confirmado)
+  if (complete || cache.bracketConfirmed) {
+    html += `<div class="bk-head"><div class="bk-title">🏆 FASE ELIMINATORIA</div>
+      <div class="bk-sub">Desliza horizontalmente para ver todas las rondas →</div></div>`;
+    html += renderBracketColumns(isA);
+  }
+
+  // Botones de guardado
+  if (isA && (complete || cache.bracketConfirmed)) {
+    html += `<button class="btn btn-primary btn-full" onclick="saveBracketResults()" style="margin-top:10px">✓ Guardar resultados del bracket</button><div class="ok" id="bmsg"></div>`;
+  }
+  if (!isA && (complete || cache.bracketConfirmed)) {
+    html += `<div style="font-size:12px;color:var(--text2);margin:10px 0 8px">Predicí el marcador de cada cruce. Podés modificar hasta que arranca el partido. Puntos: 3 exacto · 1 ganador · 0 nada.</div>
+      <button class="btn btn-primary btn-full" onclick="saveBracketProns()">💾 Guardar mis predicciones</button><div class="ok" id="bpmsg"></div>`;
+  }
+
   document.getElementById(id).innerHTML = html;
 }
 
-async function saveElimRes() {
-  const toSave = [];
-  ELIM_ROUNDS.forEach(r => r.matches.forEach(em => {
-    const h = document.getElementById('ea'+em.id+'h');
-    const a = document.getElementById('ea'+em.id+'a');
-    const w = document.getElementById('ea'+em.id+'w');
-    if (h && a) {
-      toSave.push({ match_id: em.id, home: h.value, away: a.value, winner: w ? w.value : '' });
-      cache.elim[em.id] = { home: h.value, away: a.value, winner: w ? w.value : '' };
+// Construye las columnas del bracket con líneas conectoras
+function renderBracketColumns(isA) {
+  let html = `<div class="bk-scroll"><div class="bk-rounds">`;
+  BRACKET_ROUNDS.forEach((round, ri) => {
+    const matches = BRACKET[round.key];
+    const isFinal = round.key === 'final';
+    html += `<div class="bk-col${isFinal?' bk-final-col':''}">
+      <div class="bk-col-title">${round.name}</div>`;
+    matches.forEach(m => {
+      html += renderBracketMatch(m, isA);
+    });
+    if (isFinal) {
+      const champ = cache.bracketResults['FINAL']?.winner;
+      html += `<div class="bk-champ"><div class="bk-champ-label">🏆 CAMPEÓN</div>
+        <div class="bk-champ-team">${champ ? fl(champ)+' <b>'+champ+'</b>' : '<span class="bk-slot">A definir</span>'}</div></div>`;
     }
-  }));
-  if (toSave.length) await dbUpsert('elim_results', toSave);
-  renderTbl('atblcont');
-  const msg = document.getElementById('emsg');
-  msg.textContent = '✓ Guardado';
-  setTimeout(() => msg.textContent = '', 2500);
+    html += `</div>`;
+    // conector entre columnas (excepto después de la final)
+    if (ri < BRACKET_ROUNDS.length - 1) {
+      const n = matches.length;
+      html += `<div class="bk-conn"><div class="bk-conn-title"></div><div class="bk-conn-body">`;
+      for (let k = 0; k < n; k++) {
+        html += `<div class="bk-cell ${k%2===0?'top':'bot'}"></div>`;
+      }
+      html += `</div></div>`;
+    }
+  });
+  html += `</div></div>`;
+  return html;
 }
 
-async function saveEP() {
-  const toSave = [];
-  ELIM_ROUNDS.forEach(r => r.matches.forEach(em => {
-    const inp = document.getElementById('ep'+em.id);
-    if (inp && inp.value) {
-      toSave.push({ player_name: CU, match_id: em.id, winner: inp.value });
-      cache.elimProns[em.id] = inp.value;
+// Render de un partido individual del bracket
+function renderBracketMatch(m, isA) {
+  const homeTeam = resolveSlot(m.home);
+  const awayTeam = resolveSlot(m.away);
+  const homeLbl = homeTeam || slotLabel(m.home);
+  const awayLbl = awayTeam || slotLabel(m.away);
+  const r = bracketScore(m.id);
+  const started = matchStarted(m.id);
+  const myP = cache.bracketProns[m.id];
+
+  let homeCls = '', awayCls = '';
+  if (r && r.winner) {
+    if (r.winner === homeTeam) homeCls = 'bk-win';
+    if (r.winner === awayTeam) awayCls = 'bk-win';
+  }
+
+  // Marcador a mostrar
+  const fmtScore = (goals, pens) => {
+    if (goals === null || goals === undefined) return '';
+    return pens !== null && pens !== undefined ? `${goals}<span class="bk-pen">(${pens})</span>` : `${goals}`;
+  };
+
+  if (isA) {
+    // Admin: inputs para cargar resultado
+    const teamsKnown = homeTeam && awayTeam;
+    return `<div class="bk-pair"><div class="bk-match">
+      <div class="bk-match-info">${m.date} · ${m.time} · ${m.sede}</div>
+      <div class="bk-team ${homeCls}">
+        <img src="https://flagcdn.com/w40/${FLAGS[homeTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
+        <span class="nm">${homeLbl}</span>
+        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">
+      </div>
+      <div class="bk-team ${awayCls}">
+        <img src="https://flagcdn.com/w40/${FLAGS[awayTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
+        <span class="nm">${awayLbl}</span>
+        <input type="number" min="0" max="99" class="bk-in" id="br${m.id}a" value="${r?.away_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">
+      </div>
+      <div class="bk-pens">Penales (si hubo empate): 
+        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}ph" value="${r?.home_pens??''}" placeholder="L">
+        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}pa" value="${r?.away_pens??''}" placeholder="V">
+      </div>
+    </div></div>`;
+  } else {
+    // Jugador: inputs de predicción (bloqueados si arrancó) + resultado real
+    const teamsKnown = homeTeam && awayTeam;
+    let badge = '';
+    if (r && myP) {
+      const pp = scoreBracketPts(m.id, myP.h, myP.a);
+      if (pp === 3) badge = '<span class="badge bex">+3</span>';
+      else if (pp === 1) badge = '<span class="badge bwi">+1</span>';
+      else if (pp === 0) badge = '<span class="badge bno">0</span>';
     }
-  }));
-  if (toSave.length) await dbUpsert('elim_predictions', toSave);
-  const msg = document.getElementById('epmsg');
-  msg.textContent = '✓ Guardado';
-  setTimeout(() => msg.textContent = '', 2500);
+    const lockIcon = started ? ' 🔒' : '';
+    return `<div class="bk-pair"><div class="bk-match">
+      <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}${lockIcon} ${badge}</div>
+      <div class="bk-team ${homeCls}">
+        <img src="https://flagcdn.com/w40/${FLAGS[homeTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
+        <span class="nm">${homeLbl}</span>
+        ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}
+      </div>
+      <div class="bk-team ${awayCls}">
+        <img src="https://flagcdn.com/w40/${FLAGS[awayTeam]||'xx'}.png" onerror="this.style.visibility='hidden'">
+        <span class="nm">${awayLbl}</span>
+        ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}
+      </div>
+      ${myP && !r ? `<div class="bk-mypred">Mi predicción: ${myP.h}-${myP.a}</div>` : ''}
+    </div></div>`;
+  }
+}
+
+// Puntos de una predicción de bracket (mismo criterio clásico)
+function scoreBracketPts(mid, ph, pa) {
+  const r = cache.bracketResults[mid];
+  if (!r || r.home_goals === null || r.home_goals === undefined) return null;
+  if (ph === '' || ph === null || ph === undefined) return 0;
+  const p = parseInt(ph), q = parseInt(pa);
+  if (p === r.home_goals && q === r.away_goals) return 3;
+  if (win(p,q) === win(r.home_goals, r.away_goals)) return 1;
+  return 0;
+}
+
+// Admin confirma los clasificados → fija los slots en la BD
+async function confirmGroups() {
+  if (!allGroupsComplete()) return;
+  const auto = computeAutoSlots();
+  const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
+  await dbUpsert('bracket_slots', rows);
+  await dbUpsert('bracket_config', { id: 1, groups_confirmed: true });
+  cache.bracketSlots = auto;
+  cache.bracketConfirmed = true;
+  renderElim('elima', true);
+}
+
+async function reopenGroups() {
+  const auto = computeAutoSlots();
+  const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
+  await dbUpsert('bracket_slots', rows);
+  cache.bracketSlots = auto;
+  renderElim('elima', true);
+}
+
+// Admin guarda resultados del bracket (calcula ganador y avanza)
+async function saveBracketResults() {
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando...';
+  const toSave = [];
+  ALL_BRACKET_MATCHES.forEach(m => {
+    const h = document.getElementById('br'+m.id+'h');
+    const a = document.getElementById('br'+m.id+'a');
+    if (!h || !a || h.value === '' || a.value === '') return;
+    const ph = document.getElementById('br'+m.id+'ph');
+    const pa = document.getElementById('br'+m.id+'pa');
+    const hg = parseInt(h.value), ag = parseInt(a.value);
+    const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
+    let winner;
+    if (hg > ag) winner = homeTeam;
+    else if (ag > hg) winner = awayTeam;
+    else {
+      // empate → definir por penales
+      const hp = ph && ph.value !== '' ? parseInt(ph.value) : null;
+      const ap = pa && pa.value !== '' ? parseInt(pa.value) : null;
+      if (hp !== null && ap !== null) winner = hp > ap ? homeTeam : awayTeam;
+      else winner = null;
+    }
+    const row = { match_id: m.id, home_team: homeTeam, away_team: awayTeam,
+      home_goals: hg, away_goals: ag,
+      home_pens: ph && ph.value !== '' ? parseInt(ph.value) : null,
+      away_pens: pa && pa.value !== '' ? parseInt(pa.value) : null,
+      winner };
+    toSave.push(row);
+    cache.bracketResults[m.id] = row;
+  });
+  if (toSave.length) await dbUpsert('bracket_results', toSave);
+  await loadCache();
+  renderElim('elima', true);
+  const msg = document.getElementById('bmsg');
+  if (msg) { msg.textContent = '✓ Resultados guardados'; setTimeout(() => msg.textContent = '', 2500); }
+}
+
+// Jugador guarda sus predicciones del bracket
+async function saveBracketProns() {
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando...';
+  const toSave = [];
+  ALL_BRACKET_MATCHES.forEach(m => {
+    if (matchStarted(m.id)) return; // no guardar los bloqueados
+    const h = document.getElementById('bp'+m.id+'h');
+    const a = document.getElementById('bp'+m.id+'a');
+    if (h && a && h.value !== '' && a.value !== '') {
+      toSave.push({ player_name: CU, match_id: m.id, home_goals: parseInt(h.value), away_goals: parseInt(a.value) });
+      cache.bracketProns[m.id] = { h: parseInt(h.value), a: parseInt(a.value) };
+    }
+  });
+  if (toSave.length) await dbUpsert('bracket_predictions', toSave);
+  btn.disabled = false; btn.innerHTML = '💾 Guardar mis predicciones';
+  const msg = document.getElementById('bpmsg');
+  if (msg) { msg.textContent = '✓ Predicciones guardadas'; setTimeout(() => msg.textContent = '', 2500); }
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────

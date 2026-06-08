@@ -165,12 +165,42 @@
   .stat-num{font-size:22px;font-weight:700}
   .stat-label{font-size:11px;color:var(--text2);margin-top:3px}
 
-  /* Elim */
-  .elim-section{margin-bottom:1rem}
-  .elim-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;padding:6px 0;border-bottom:1px solid var(--border)}
-  .elim-match{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);
-    border-radius:var(--radius);margin-bottom:6px;font-size:12px;background:var(--bg2)}
-  .elim-team{flex:1;font-weight:500;display:flex;align-items:center;gap:5px}
+  /* Bracket eliminatoria */
+  .bk-head{text-align:center;margin-bottom:1rem;padding:0 .5rem}
+  .bk-title{font-size:16px;font-weight:700;background:linear-gradient(100deg,#a87a0c,#f0c040,#fff6d6,#d49e16,#8a6508);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+  .bk-sub{font-size:11px;color:var(--text2);margin-top:3px}
+  .bk-scroll{overflow-x:auto;padding-bottom:1rem;-webkit-overflow-scrolling:touch}
+  .bk-rounds{display:flex;min-width:max-content;padding:0 .25rem}
+  .bk-col{display:flex;flex-direction:column;justify-content:space-around;min-width:158px}
+  .bk-final-col{justify-content:center}
+  .bk-col-title{font-size:10px;font-weight:700;letter-spacing:1px;color:#7cc4f0;text-align:center;text-transform:uppercase;margin-bottom:8px}
+  .bk-pair{display:flex;flex-direction:column;justify-content:center;flex:1}
+  .bk-conn{display:flex;flex-direction:column;width:14px;flex-shrink:0}
+  .bk-conn-title{height:18px;margin-bottom:8px}
+  .bk-conn-body{flex:1;display:flex;flex-direction:column}
+  .bk-cell{flex:1;position:relative}
+  .bk-cell::before{content:'';position:absolute;left:0;top:50%;width:7px;height:1px;background:var(--border2)}
+  .bk-cell.top::after{content:'';position:absolute;left:7px;top:50%;width:1px;height:50%;background:var(--border2)}
+  .bk-cell.bot::after{content:'';position:absolute;left:7px;bottom:50%;width:1px;height:50%;background:var(--border2)}
+  .bk-match{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:4px 0}
+  .bk-match-info{font-size:8px;color:var(--text3);text-align:center;padding:3px;background:#0d1322;border-bottom:1px solid var(--border);letter-spacing:.2px}
+  .bk-team{display:flex;align-items:center;gap:6px;padding:5px 7px;font-size:11px}
+  .bk-team:first-of-type{border-bottom:1px solid var(--bg3)}
+  .bk-team img{width:18px;height:12px;border-radius:2px;object-fit:cover;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+  .bk-team .nm{flex:1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+  .bk-team .sc{font-weight:700;font-size:12px;min-width:18px;text-align:center}
+  .bk-pen{font-size:8px;color:var(--text3);font-weight:400}
+  .bk-win{background:rgba(245,197,66,.08)}
+  .bk-win .nm{color:#f5c542}
+  .bk-slot{color:var(--text3);font-style:italic}
+  .bk-in{width:30px;text-align:center;padding:3px 2px;font-size:12px;border:1px solid var(--border2);border-radius:5px;background:#dde3ec;color:#0a0e1a}
+  .bk-pens{font-size:9px;color:var(--text3);padding:3px 7px;display:flex;align-items:center;gap:4px;border-top:1px solid var(--bg3)}
+  .bk-pen-in{width:28px;text-align:center;padding:2px;font-size:11px;border:1px solid var(--border2);border-radius:4px;background:#dde3ec;color:#0a0e1a}
+  .bk-mypred{font-size:9px;color:var(--text3);text-align:center;padding:2px;border-top:1px solid var(--bg3)}
+  .bk-champ{background:linear-gradient(135deg,rgba(245,197,66,.15),rgba(245,197,66,.05));border:1px solid rgba(245,197,66,.4);border-radius:8px;padding:10px;text-align:center;margin:4px 0}
+  .bk-champ-label{font-size:9px;color:#f5c542;letter-spacing:1px;font-weight:700}
+  .bk-champ-team{font-size:13px;margin-top:5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+  .bk-champ-team img{width:22px;height:15px;border-radius:2px}
 
   /* Chips jugadores */
   .player-chip{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
