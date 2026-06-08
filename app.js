@@ -800,32 +800,57 @@ function renderBracketInto(elId, isAdmin, modo) {
   document.getElementById(elId).innerHTML = html;
 }
 
-// Construye las columnas del bracket con líneas conectoras
+// Construye el cuadro simétrico: izquierda → centro (final) ← derecha
 function renderBracketColumns(modo) {
-  let html = `<div class="bk-scroll"><div class="bk-rounds">`;
-  BRACKET_ROUNDS.forEach((round, ri) => {
-    const matches = BRACKET[round.key];
-    const isFinal = round.key === 'final';
-    html += `<div class="bk-col${isFinal?' bk-final-col':''}">
-      <div class="bk-col-title">${round.name}</div>`;
-    matches.forEach(m => {
-      html += renderBracketMatch(m, modo);
-    });
-    if (isFinal) {
-      const champ = cache.bracketResults['FINAL']?.winner;
-      html += `<div class="bk-champ"><div class="bk-champ-label">🏆 CAMPEÓN</div>
-        <div class="bk-champ-team">${champ ? fl(champ)+' <b>'+champ+'</b>' : '<span class="bk-slot">A definir</span>'}</div></div>`;
-    }
+  // Reparto de cruces por lado:
+  // Izquierda alimenta SF-1 (R32 1-8, R16 1-4, QF 1-2)
+  // Derecha alimenta SF-2 (R32 9-16, R16 5-8, QF 3-4)
+  const left = {
+    r32: BRACKET.r32.slice(0,8), r16: BRACKET.r16.slice(0,4), qf: BRACKET.qf.slice(0,2), sf: [BRACKET.sf[0]]
+  };
+  const right = {
+    r32: BRACKET.r32.slice(8,16), r16: BRACKET.r16.slice(4,8), qf: BRACKET.qf.slice(2,4), sf: [BRACKET.sf[1]]
+  };
+  const roundNames = { r32:'16avos', r16:'8avos', qf:'4tos', sf:'Semi' };
+  const leftOrder = ['r32','r16','qf','sf'];
+  const rightOrder = ['sf','qf','r16','r32'];
+
+  let html = `<div class="bk-scroll"><div class="bk-grid">`;
+
+  // ----- LADO IZQUIERDO -----
+  leftOrder.forEach((key, idx) => {
+    const ms = left[key];
+    html += `<div class="bk-col"><div class="bk-col-t">${roundNames[key]}</div>`;
+    ms.forEach(m => html += renderBracketMatch(m, modo));
     html += `</div>`;
-    if (ri < BRACKET_ROUNDS.length - 1) {
-      const n = matches.length;
-      html += `<div class="bk-conn"><div class="bk-conn-title"></div><div class="bk-conn-body">`;
-      for (let k = 0; k < n; k++) {
-        html += `<div class="bk-cell ${k%2===0?'top':'bot'}"></div>`;
-      }
-      html += `</div></div>`;
-    }
+    // conector hacia la derecha (apunta al centro)
+    html += `<div class="bk-conn"><div class="bk-conn-t"></div><div class="bk-conn-b">`;
+    for (let k = 0; k < ms.length; k++) html += `<div class="bk-cell ${k%2===0?'l-top':'l-bot'}"></div>`;
+    html += `</div>`;
   });
+
+  // ----- CENTRO: Final + campeón -----
+  const champ = cache.bracketResults['FINAL']?.winner;
+  html += `<div class="bk-center">
+    <div class="bk-col-t" style="color:#f5c542">FINAL</div>
+    <div class="bk-trophy-mini">🏆</div>
+    ${renderBracketMatch(BRACKET.final[0], modo)}
+    <div class="bk-champ"><div class="bk-champ-label">CAMPEÓN</div>
+      <div class="bk-champ-team">${champ ? fl(champ)+' <b>'+champ+'</b>' : '<span class="bk-slot">A definir</span>'}</div></div>
+  </div>`;
+
+  // ----- LADO DERECHO (espejo) -----
+  rightOrder.forEach((key, idx) => {
+    const ms = right[key];
+    // conector hacia la izquierda (apunta al centro) — va ANTES de la columna
+    html += `<div class="bk-conn"><div class="bk-conn-t"></div><div class="bk-conn-b">`;
+    for (let k = 0; k < ms.length; k++) html += `<div class="bk-cell ${k%2===0?'r-top':'r-bot'}"></div>`;
+    html += `</div></div>`;
+    html += `<div class="bk-col"><div class="bk-col-t">${roundNames[key]}</div>`;
+    ms.forEach(m => html += renderBracketMatch(m, modo));
+    html += `</div>`;
+  });
+
   html += `</div></div>`;
   return html;
 }
@@ -858,7 +883,7 @@ function renderBracketMatch(m, modo) {
 
   // MODO ADMIN: cargar resultados reales
   if (modo === 'adminres') {
-    return `<div class="bk-pair"><div class="bk-match">
+    return `<div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} · ${m.sede}</div>
       <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
         <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
@@ -867,7 +892,7 @@ function renderBracketMatch(m, modo) {
       <div class="bk-pens">Penales (si empatan): 
         <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}ph" value="${r?.home_pens??''}" placeholder="L">
         <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}pa" value="${r?.away_pens??''}" placeholder="V"></div>
-    </div></div>`;
+    </div>`;
   }
 
   // MODO PREDICCIÓN: jugador pone su marcador
@@ -880,14 +905,14 @@ function renderBracketMatch(m, modo) {
       else if (pp === 0) badge = '<span class="badge bno">0</span>';
     }
     const lockIcon = started ? ' 🔒' : '';
-    return `<div class="bk-pair"><div class="bk-match">
+    return `<div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}${lockIcon} ${badge}</div>
       <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
         ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
       <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
         ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
       ${myP && !r ? `<div class="bk-mypred">Mi predicción: ${myP.h}-${myP.a}</div>` : ''}
-    </div></div>`;
+    </div>`;
   }
 
   // MODO REAL: solo lectura (lo que va pasando)
@@ -901,14 +926,14 @@ function renderBracketMatch(m, modo) {
       myInfo = `<div class="bk-mypred">Tu predicción: ${myP.h}-${myP.a}</div>`;
     }
   }
-  return `<div class="bk-pair"><div class="bk-match">
+  return `<div class="bk-match">
     <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}</div>
     <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
       <span class="sc">${r ? fmtScore(r.home_goals,r.home_pens) : '—'}</span></div>
     <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
       <span class="sc">${r ? fmtScore(r.away_goals,r.away_pens) : '—'}</span></div>
     ${myInfo}
-  </div></div>`;
+  </div>`;
 }
 
 // Puntos de una predicción de bracket (mismo criterio clásico)
