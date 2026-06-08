@@ -881,7 +881,7 @@ function renderBracketMatch(m, modo) {
   const homeNmCls = homeTeam ? 'nm' : 'nm bk-slot';
   const awayNmCls = awayTeam ? 'nm' : 'nm bk-slot';
 
-  // MODO ADMIN: cargar resultados reales
+  // MODO ADMIN: cargar resultados reales (mismo diseño compacto que predicción)
   if (modo === 'adminres') {
     return `<div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} · ${m.sede}</div>
@@ -889,9 +889,6 @@ function renderBracketMatch(m, modo) {
         <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
       <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
         <input type="number" min="0" max="99" class="bk-in" id="br${m.id}a" value="${r?.away_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
-      <div class="bk-pens">Penales (si empatan): 
-        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}ph" value="${r?.home_pens??''}" placeholder="L">
-        <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}pa" value="${r?.away_pens??''}" placeholder="V"></div>
     </div>`;
   }
 
