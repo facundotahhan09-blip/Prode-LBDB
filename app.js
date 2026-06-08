@@ -429,17 +429,17 @@ function resolveSlot(slot) {
   return null;
 }
 
-// Etiqueta legible de un slot cuando todavía no hay equipo
+// Etiqueta corta de un slot cuando todavía no hay equipo (estilo FIFA: 1A, 2B, 3 ABCDF)
 function slotLabel(slot) {
   if (!slot) return '—';
   if (slot.startsWith('W-')) {
     const mid = slot.slice(2);
-    const names = {R32:'16avos',R16:'Octavos',QF:'Cuartos',SF:'Semi'};
+    const names = {R32:'16°',R16:'8°',QF:'4°',SF:'SF'};
     const parts = mid.split('-');
-    return 'Ganador ' + (names[parts[0]]||parts[0]) + ' ' + parts[2];
+    return 'Gan. ' + (names[parts[0]]||parts[0]) + parts[2];
   }
-  if (slot.startsWith('3-')) return '3° (' + slot.slice(2).split('').join('/') + ')';
-  return slot[0] + '° Grupo ' + slot.slice(1);
+  if (slot.startsWith('3-')) return '3° ' + slot.slice(2);
+  return slot[0] + slot.slice(1); // 1A, 2B, etc.
 }
 
 // ── RENDER USER ──────────────────────────────────────────────────────────────
@@ -753,19 +753,7 @@ function bracketScore(mid) {
 // Render del bracket para el jugador (te=elimu) o admin (ae2=elima)
 // renderElim ahora se usa SOLO para la pestaña "Eliminatorias" = modo REAL (solo lectura)
 function renderElim(id, isA) {
-  const complete = allGroupsComplete();
-  let html = '';
-
-  if (!complete && !cache.bracketConfirmed) {
-    html += `<div class="card" style="text-align:center;padding:1.25rem">
-      <div style="font-size:13px;color:var(--text2)">⏳ La fase eliminatoria arranca cuando termina la fase de grupos.</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:6px">Acá vas a poder seguir el cuadro real del Mundial a medida que avanza.</div>
-    </div>`;
-    document.getElementById(id).innerHTML = html;
-    return;
-  }
-
-  html += `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
+  let html = `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
     <div class="bk-sub">Resultados reales · desliza horizontalmente →</div></div>`;
   html += renderBracketColumns('real');
   document.getElementById(id).innerHTML = html;
@@ -784,7 +772,7 @@ function renderBracketInto(elId, isAdmin, modo) {
     html += `<div class="card" style="margin-bottom:12px">
       <div style="font-size:13px;font-weight:600;margin-bottom:8px">Clasificación a eliminatorias</div>`;
     if (!complete) {
-      html += `<div style="font-size:12px;color:var(--text3)">Faltan cargar resultados de la fase de grupos para armar el cuadro.</div>`;
+      html += `<div style="font-size:12px;color:var(--text3)">Aún faltan resultados de grupos. El cuadro muestra las posiciones (1A, 2B...) y se irá completando con los equipos reales.</div>`;
     } else if (!cache.bracketConfirmed) {
       html += `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Los grupos están completos. Confirmá los clasificados para fijar los cruces (1°, 2° y 8 mejores terceros automáticos según FIFA).</div>
         <button class="btn btn-primary btn-full" onclick="confirmGroups()">✓ Confirmar clasificados y armar cuadro</button>`;
@@ -795,28 +783,16 @@ function renderBracketInto(elId, isAdmin, modo) {
     html += `</div>`;
   }
 
-  // Aviso para el jugador si todavía no arrancó
-  if (modo === 'pred' && !complete && !cache.bracketConfirmed) {
-    html += `<div class="card" style="text-align:center;padding:1.25rem">
-      <div style="font-size:13px;color:var(--text2)">⏳ Vas a poder predecir la fase eliminatoria cuando se definan los cruces.</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:6px">Cada cruce se habilita en cuanto se conocen los dos equipos. Podés modificar hasta que arranca el partido.</div>
-    </div>`;
-    document.getElementById(elId).innerHTML = html;
-    return;
-  }
-
-  // El cuadro
-  if (complete || cache.bracketConfirmed) {
-    html += `<div class="bk-head"><div class="bk-title">🏆 FASE ELIMINATORIA</div>
-      <div class="bk-sub">Desliza horizontalmente para ver todas las rondas →</div></div>`;
-    html += renderBracketColumns(modo);
-  }
+  // El cuadro SIEMPRE se muestra (con etiquetas 1A/2B/3... en los huecos vacíos)
+  html += `<div class="bk-head"><div class="bk-title">🏆 FASE ELIMINATORIA</div>
+    <div class="bk-sub">Desliza horizontalmente para ver todas las rondas →</div></div>`;
+  html += renderBracketColumns(modo);
 
   // Botones de guardado
-  if (modo === 'adminres' && (complete || cache.bracketConfirmed)) {
+  if (modo === 'adminres') {
     html += `<button class="btn btn-primary btn-full" onclick="saveBracketResults()" style="margin-top:10px">✓ Guardar resultados del cuadro</button><div class="ok" id="bmsg"></div>`;
   }
-  if (modo === 'pred' && (complete || cache.bracketConfirmed)) {
+  if (modo === 'pred') {
     html += `<div style="font-size:12px;color:var(--text2);margin:10px 0 8px">Predicí el marcador de cada cruce ya definido. Podés modificar hasta que arranca el partido. Puntos: 3 exacto · 1 ganador · 0 nada.</div>
       <button class="btn btn-primary btn-full" onclick="saveBracketProns()">💾 Guardar mis predicciones</button><div class="ok" id="bpmsg"></div>`;
   }
@@ -874,15 +850,19 @@ function renderBracketMatch(m, modo) {
     if (goals === null || goals === undefined) return '';
     return pens !== null && pens !== undefined ? `${goals}<span class="bk-pen">(${pens})</span>` : `${goals}`;
   };
-  const flagImg = t => `<img src="https://flagcdn.com/w40/${FLAGS[t]||'xx'}.png" onerror="this.style.visibility='hidden'">`;
+  const flagImg = t => t && FLAGS[t]
+    ? `<img src="https://flagcdn.com/w40/${FLAGS[t]}.png" onerror="this.style.visibility='hidden'">`
+    : `<span style="display:inline-block;width:18px;height:12px;background:#1f2a40;border-radius:2px;flex-shrink:0;box-shadow:0 0 0 1px rgba(255,255,255,.06)"></span>`;
+  const homeNmCls = homeTeam ? 'nm' : 'nm bk-slot';
+  const awayNmCls = awayTeam ? 'nm' : 'nm bk-slot';
 
   // MODO ADMIN: cargar resultados reales
   if (modo === 'adminres') {
     return `<div class="bk-pair"><div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} · ${m.sede}</div>
-      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
         <input type="number" min="0" max="99" class="bk-in" id="br${m.id}h" value="${r?.home_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
-      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
         <input type="number" min="0" max="99" class="bk-in" id="br${m.id}a" value="${r?.away_goals??''}" ${!teamsKnown?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)"></div>
       <div class="bk-pens">Penales (si empatan): 
         <input type="number" min="0" max="99" class="bk-pen-in" id="br${m.id}ph" value="${r?.home_pens??''}" placeholder="L">
@@ -902,9 +882,9 @@ function renderBracketMatch(m, modo) {
     const lockIcon = started ? ' 🔒' : '';
     return `<div class="bk-pair"><div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}${lockIcon} ${badge}</div>
-      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+      <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
         ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
-      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+      <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
         ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
       ${myP && !r ? `<div class="bk-mypred">Mi predicción: ${myP.h}-${myP.a}</div>` : ''}
     </div></div>`;
@@ -923,9 +903,9 @@ function renderBracketMatch(m, modo) {
   }
   return `<div class="bk-pair"><div class="bk-match">
     <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}</div>
-    <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="nm">${homeLbl}</span>
+    <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
       <span class="sc">${r ? fmtScore(r.home_goals,r.home_pens) : '—'}</span></div>
-    <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="nm">${awayLbl}</span>
+    <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
       <span class="sc">${r ? fmtScore(r.away_goals,r.away_pens) : '—'}</span></div>
     ${myInfo}
   </div></div>`;
