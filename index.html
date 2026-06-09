@@ -169,8 +169,8 @@
   .bk-head{text-align:center;margin-bottom:1rem;padding:0 .5rem}
   .bk-title{font-size:16px;font-weight:700;background:linear-gradient(100deg,#a87a0c,#f0c040,#fff6d6,#d49e16,#8a6508);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
   .bk-sub{font-size:11px;color:var(--text2);margin-top:3px}
-  .bk-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:1rem;-webkit-overflow-scrolling:touch}
-  .bk-grid{display:flex;flex-wrap:nowrap;align-items:stretch;width:max-content;margin:0 auto}
+  .bk-scroll{overflow-x:auto;overflow-y:hidden;width:100%;max-width:100%;padding-bottom:1rem;-webkit-overflow-scrolling:touch}
+  .bk-grid{display:flex;flex-wrap:nowrap;align-items:stretch;width:max-content}
   .bk-col{display:flex;flex-direction:column;justify-content:space-around;width:150px;flex:0 0 150px;padding:8px 0}
   .bk-col-t{font-size:9px;font-weight:700;letter-spacing:.5px;color:#7cc4f0;text-align:center;text-transform:uppercase;margin-bottom:10px;height:12px}
   .bk-conn{display:flex;flex-direction:column;width:18px;flex:0 0 18px;padding:8px 0}
@@ -317,16 +317,17 @@
     </div>
     <div class="tabs">
       <button class="tab on" onclick="st('tp',this)">Mis pronósticos</button>
-      <button class="tab" onclick="st('tg',this)">Grupos</button>
       <button class="tab" onclick="st('tt',this)">Tabla</button>
       <button class="tab" onclick="st('tr',this)">Mis resultados</button>
-      <button class="tab" onclick="st('te',this)">Eliminatorias</button>
+      <button class="tab" onclick="st('te',this)">Posiciones</button>
     </div>
     <div id="tp" class="tc on"><div class="grp-tabs" id="gsu"></div><div id="pu"></div><button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div></div>
-    <div id="tg" class="tc"><div id="grpcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
     <div id="tt" class="tc"><div id="tblcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
     <div id="tr" class="tc"><div id="rescont"></div></div>
-    <div id="te" class="tc"><div id="elimu"></div></div>
+    <div id="te" class="tc">
+      <div class="grp-tabs" id="possu"></div>
+      <div id="poscont-u"></div>
+    </div>
   </div>
 
   <!-- ADMIN -->
@@ -340,13 +341,16 @@
     </div>
     <div class="tabs">
       <button class="tab on" onclick="st('ar',this)">Resultados</button>
-      <button class="tab" onclick="st('ae2',this)">Eliminatorias</button>
+      <button class="tab" onclick="st('ae2',this)">Posiciones</button>
       <button class="tab" onclick="st('at',this)">Tabla</button>
       <button class="tab" onclick="st('ac',this)">Config</button>
       <button class="tab" onclick="st('apa',this)">Jugadores</button>
     </div>
     <div id="ar" class="tc on"><div class="grp-tabs" id="gsa"></div><div id="pa"></div><button class="btn btn-primary btn-full" onclick="saveRes()" style="margin-top:6px">✓ Guardar resultados</button><div class="ok" id="rmsg"></div></div>
-    <div id="ae2" class="tc"><div id="elima"></div></div>
+    <div id="ae2" class="tc">
+      <div class="grp-tabs" id="possa"></div>
+      <div id="poscont-a"></div>
+    </div>
     <div id="at" class="tc"><div id="atblcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
     <div id="ac" class="tc">
       <div class="card">

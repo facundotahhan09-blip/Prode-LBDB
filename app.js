@@ -238,12 +238,29 @@ function st(id, btn) {
   p.querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   btn.classList.add('on');
-  if (id === 'tg') renderGrpStandings();
   if (id === 'tt' || id === 'at') renderTbl(id === 'at' ? 'atblcont' : 'tblcont');
   if (id === 'tr') renderMyRes();
-  if (id === 'te') renderElim('elimu', false);
-  if (id === 'ae2') renderElim('elima', false);
+  if (id === 'te') renderPosiciones('u');
+  if (id === 'ae2') renderPosiciones('a');
   if (id === 'apa') renderPart();
+}
+
+// Sub-selector de la pestaña Posiciones: Fase de grupos / Eliminatorias
+let selPos = { u: 'grupos', a: 'grupos' };
+function renderPosiciones(mode) {
+  const selId = mode === 'u' ? 'possu' : 'possa';
+  const contId = mode === 'u' ? 'poscont-u' : 'poscont-a';
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '';
+  [['grupos','Fase de grupos'],['elim','Eliminatorias']].forEach(([k,label]) => {
+    const b = document.createElement('button');
+    b.className = 'gbt' + (selPos[mode] === k ? ' on' : '');
+    b.innerHTML = `<strong>${label}</strong>`;
+    b.onclick = () => { selPos[mode] = k; renderPosiciones(mode); };
+    sel.appendChild(b);
+  });
+  if (selPos[mode] === 'grupos') renderGrpStandings(contId);
+  else renderElim(contId, false);
 }
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
@@ -458,7 +475,6 @@ function renderAdm() {
   document.getElementById('cfp').value = cache.config.player_pass || '';
   document.getElementById('cfa').value = cache.config.admin_pass || '';
   renderTbl('atblcont');
-  renderElim('elima', false);
 }
 
 const JORNADAS = [
@@ -588,7 +604,8 @@ async function saveRes() {
 
 // ── STANDINGS ────────────────────────────────────────────────────────────────
 
-function renderGrpStandings() {
+function renderGrpStandings(contId) {
+  contId = contId || 'grpcont';
   let html = '';
   Object.keys(GRUPOS).forEach(g => {
     const teams = GRUPOS[g];
@@ -628,7 +645,7 @@ function renderGrpStandings() {
     });
     html += '</tbody></table></div></div>';
   });
-  document.getElementById('grpcont').innerHTML = html;
+  document.getElementById(contId).innerHTML = html;
 }
 
 // ── TABLA JUGADORES ──────────────────────────────────────────────────────────
