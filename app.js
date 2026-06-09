@@ -208,7 +208,7 @@ const THIRD_SLOTS = [
 // ── STATE ────────────────────────────────────────────────────────────────────
 
 let CU = null, IA = false;
-let cache = { results: {}, players: [], prons: {}, config: {},
+let cache = { results: {}, players: [], playerInfo: {}, prons: {}, config: {},
               bracketResults: {}, bracketProns: {}, bracketSlots: {}, bracketConfirmed: false };
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -216,6 +216,18 @@ let cache = { results: {}, players: [], prons: {}, config: {},
 const fl = t => { const code = FLAGS[t]; return code ? `<img src="https://flagcdn.com/w40/${code}.png" width="24" height="16" style="border-radius:2px;object-fit:cover;vertical-align:middle" alt="${t}">` : '<span style="display:inline-block;width:24px;height:16px;background:#333;border-radius:2px"></span>'; };
 const ini = n => n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
 const win = (h,a) => h>a?'h':a>h?'a':'d';
+
+// Devuelve el HTML de un avatar: foto si existe, si no las iniciales.
+// size en px; cls opcional para clases extra
+function avatarHtml(name, size, cls) {
+  size = size || 28;
+  cls = cls || '';
+  const info = cache.playerInfo && cache.playerInfo[name];
+  if (info && info.photo) {
+    return `<img class="avatar-img ${cls}" src="${info.photo}" alt="${name}" style="width:${size}px;height:${size}px" onerror="this.outerHTML='<div class=\\'avatar ${cls}\\' style=\\'width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px\\'>${ini(name)}</div>'">`;
+  }
+  return `<div class="avatar ${cls}" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px">${ini(name)}</div>`;
+}
 
 function pts(matchId, ph, pa) {
   const r = cache.results[matchId];
@@ -270,11 +282,14 @@ async function doLogin() {
   const p = document.getElementById('lp').value;
   const e = document.getElementById('le');
   if (!n) { e.textContent = 'Ingresá tu nombre'; return; }
-  const cfg = await dbGet('config', 'id=eq.1');
-  if (!cfg[0] || p !== cfg[0].player_pass) { e.textContent = 'Contraseña incorrecta'; return; }
+  if (!p) { e.textContent = 'Ingresá tu contraseña'; return; }
+  // Buscar la cuenta del jugador (case-insensitive)
+  const found = await dbGet('players', `name=ilike.${encodeURIComponent(n)}&select=name,password`);
+  const acct = found && found[0];
+  if (!acct) { e.textContent = 'No existe una cuenta con ese nombre. Pedile al organizador que te cree una.'; return; }
+  if (!acct.password || acct.password !== p) { e.textContent = 'Contraseña incorrecta'; return; }
   e.textContent = '';
-  CU = n; IA = false;
-  await dbUpsert('players', { name: n });
+  CU = acct.name; IA = false; // usar el nombre tal como está guardado
   await loadCache();
   renderUsr();
   go('usr');
@@ -304,7 +319,7 @@ function doOut() {
 async function loadCache() {
   const [res, players, cfg, bres, bslots, bcfg] = await Promise.all([
     dbGet('results', 'select=match_id,home_goals,away_goals'),
-    dbGet('players', 'select=name'),
+    dbGet('players', 'select=name,photo_url,prev_rank'),
     dbGet('config', 'id=eq.1'),
     dbGet('bracket_results', 'select=match_id,home_team,away_team,home_goals,away_goals,home_pens,away_pens,winner,kickoff'),
     dbGet('bracket_slots', 'select=slot,team'),
@@ -313,6 +328,8 @@ async function loadCache() {
   cache.results = {};
   res.forEach(r => cache.results[r.match_id] = r);
   cache.players = players.map(p => p.name);
+  cache.playerInfo = {};
+  players.forEach(p => cache.playerInfo[p.name] = { photo: p.photo_url, prevRank: p.prev_rank });
   cache.config = cfg[0] || {};
   cache.bracketResults = {};
   bres.forEach(b => cache.bracketResults[b.match_id] = b);
@@ -463,7 +480,7 @@ function slotLabel(slot) {
 
 function renderUsr() {
   document.getElementById('uname').textContent = CU;
-  document.getElementById('unav').textContent = ini(CU);
+  document.getElementById('unav').innerHTML = avatarHtml(CU, 30);
   buildGT('gsu', 'u');
   renderProns('pu', 'u');
   renderTbl('tblcont');
@@ -657,14 +674,12 @@ async function renderTbl(id) {
   const scores = {};
   players.forEach(u => {
     let tot = 0, ex = 0, wi = 0;
-    // Puntos fase de grupos
     MATCHES.forEach(m => {
       const p = byPlayer[u]?.[m.id];
       const pp = p ? pts(m.id, p.h, p.a) : 0;
       if (pp === 3) { tot += 3; ex++; }
       else if (pp === 1) { tot += 1; wi++; }
     });
-    // Puntos fase eliminatoria (mismo criterio: 3 exacto / 1 ganador)
     let ep = 0;
     ALL_BRACKET_MATCHES.forEach(m => {
       const p = bpByPlayer[u]?.[m.id];
@@ -673,33 +688,85 @@ async function renderTbl(id) {
       if (pp === 3) { ep += 3; ex++; }
       else if (pp === 1) { ep += 1; wi++; }
     });
-    scores[u] = { tot: tot + ep, group: tot, elim: ep, ex, wi };
+    scores[u] = { tot: tot + ep, ex, wi };
   });
-  const sorted = Object.entries(scores).sort((a, b) => b[1].tot - a[1].tot);
-  const played = MATCHES.filter(m => cache.results[m.id]).length;
-  let html = `<div class="stats-grid">
-    <div class="stat-card"><div class="stat-num">${played}/${MATCHES.length}</div><div class="stat-label">Partidos jugados</div></div>
-    <div class="stat-card"><div class="stat-num">${players.length}</div><div class="stat-label">Participantes</div></div>
-    <div class="stat-card"><div class="stat-num">${sorted[0]?.[1].tot ?? 0}</div><div class="stat-label">Puntaje líder</div></div>
-  </div>
-  <div class="card" style="padding:0;overflow:hidden">
+  const sorted = Object.entries(scores).sort((a, b) => b[1].tot - a[1].tot || b[1].ex - a[1].ex);
+
+  let html = '';
+
+  // ----- PODIO TOP 3 -----
+  if (sorted.length >= 1) {
+    const podioOrder = [1, 0, 2]; // 2° izq, 1° centro, 3° der
+    html += `<div class="podio">`;
+    podioOrder.forEach(pos => {
+      if (!sorted[pos]) { html += `<div class="podio-spot"></div>`; return; }
+      const [name, s] = sorted[pos];
+      const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : '🥉';
+      const stepCls = pos === 0 ? 'step-1' : pos === 1 ? 'step-2' : 'step-3';
+      const ringCls = pos === 0 ? 'ring-gold' : pos === 1 ? 'ring-silver' : 'ring-bronze';
+      html += `<div class="podio-spot">
+        <div class="podio-medal">${medal}</div>
+        ${avatarHtml(name, pos===0?64:54, 'podio-av '+ringCls)}
+        <div class="podio-name">${name}</div>
+        <div class="podio-pts">${s.tot} pts</div>
+        <div class="podio-step ${stepCls}">${pos+1}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ----- TABLA COMPLETA -----
+  html += `<div class="card" style="padding:0;overflow:hidden;margin-top:1rem">
   <table class="ptbl"><thead><tr>
-    <th style="width:32px">#</th><th>Jugador</th><th style="text-align:center">Pts</th>
-    <th style="text-align:center">Grupo</th><th style="text-align:center">Elim.</th><th style="text-align:center">Exactos</th>
+    <th style="width:40px">#</th><th>Jugador</th>
+    <th style="text-align:center">Pts</th>
+    <th style="text-align:center">Exac.</th>
+    <th style="text-align:center">Gan.</th>
   </tr></thead><tbody>`;
   sorted.forEach(([u, s], i) => {
+    const rank = i + 1;
     const pc = i === 0 ? 'p1' : i === 1 ? 'p2' : i === 2 ? 'p3' : '';
+    // movimiento de posición respecto a prev_rank guardado
+    const prev = cache.playerInfo[u]?.prevRank;
+    let mov = '<span class="mov-same">—</span>';
+    if (prev && prev !== rank) {
+      if (prev > rank) mov = `<span class="mov-up">▲${prev - rank}</span>`;
+      else mov = `<span class="mov-down">▼${rank - prev}</span>`;
+    }
     html += `<tr>
-      <td style="padding-left:14px"><span class="pn ${pc}">${i+1}</span></td>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${ini(u)}</div>${u}</div></td>
+      <td style="padding-left:12px"><div style="display:flex;align-items:center;gap:4px"><span class="pn ${pc}">${rank}</span>${mov}</div></td>
+      <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(u, 30)}<span>${u}</span></div></td>
       <td style="text-align:center;font-weight:700;font-size:14px">${s.tot}</td>
-      <td style="text-align:center;color:var(--text2)">${s.group}</td>
-      <td style="text-align:center;color:var(--yellow)">${s.elim}</td>
       <td style="text-align:center;color:var(--green)">${s.ex}</td>
+      <td style="text-align:center;color:var(--yellow)">${s.wi}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
+
+  // botón admin para "congelar" posiciones actuales (para el próximo movimiento)
+  if (IA) {
+    html += `<button class="btn btn-sm" style="margin-top:10px" onclick="snapshotRanks()">📌 Fijar posiciones actuales (para calcular movimientos)</button><div class="ok" id="snapmsg"></div>`;
+  }
+
   document.getElementById(id).innerHTML = html;
+}
+
+// Guarda el ranking actual como prev_rank de cada jugador (para mostrar ↑↓ después)
+async function snapshotRanks() {
+  const { byPlayer, bpByPlayer } = await loadAllProns();
+  const scores = {};
+  cache.players.forEach(u => {
+    let tot = 0;
+    MATCHES.forEach(m => { const p = byPlayer[u]?.[m.id]; const pp = p ? pts(m.id,p.h,p.a) : 0; if (pp) tot += pp; });
+    ALL_BRACKET_MATCHES.forEach(m => { const p = bpByPlayer[u]?.[m.id]; if (p) { const pp = scoreBracketPts(m.id,p.h,p.a); if (pp) tot += pp; } });
+    scores[u] = tot;
+  });
+  const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+  const rows = sorted.map(([name], i) => ({ name, prev_rank: i + 1 }));
+  await dbUpsert('players', rows);
+  rows.forEach(r => { if (cache.playerInfo[r.name]) cache.playerInfo[r.name].prevRank = r.prev_rank; });
+  const msg = document.getElementById('snapmsg');
+  if (msg) { msg.textContent = '✓ Posiciones fijadas'; setTimeout(() => msg.textContent = '', 2500); }
 }
 
 // ── MIS RESULTADOS ───────────────────────────────────────────────────────────
@@ -1049,28 +1116,107 @@ async function saveCfg() {
   setTimeout(() => msg.textContent = '', 2500);
 }
 
-// ── PARTICIPANTES ─────────────────────────────────────────────────────────────
+// ── GESTIÓN DE JUGADORES (admin) ───────────────────────────────────────────────
 
 async function renderPart() {
   const { byPlayer } = await loadAllProns();
   const players = cache.players;
-  let html = players.length
-    ? '<div class="card" style="padding:0 1.25rem">'
-    : '<div class="card"><div style="color:var(--text2);font-size:13px">Nadie se registró todavía.</div></div>';
-  players.forEach(u => {
-    const filled = Object.keys(byPlayer[u] || {}).length;
-    const done = filled === MATCHES.length;
-    html += `<div class="player-chip">
-      <div class="avatar">${ini(u)}</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${u}</div>
-        <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos cargados</div>
-      </div>
-      <div class="dot ${done ? 'dot-ok' : 'dot-nd'}"></div>
-    </div>`;
-  });
-  if (players.length) html += '</div>';
+
+  let html = `<div class="card">
+    <div style="font-size:14px;font-weight:600;margin-bottom:1rem">Crear cuenta de jugador</div>
+    <div style="margin-bottom:10px"><div class="label">Nombre</div><input type="text" class="login-input" id="np-name" placeholder="Ej: Matías"></div>
+    <div style="margin-bottom:10px"><div class="label">Contraseña personal</div><input type="text" class="login-input" id="np-pass" placeholder="La que va a usar para entrar"></div>
+    <div style="margin-bottom:12px"><div class="label">Foto de perfil (opcional, podés agregarla después)</div>
+      <input type="file" accept="image/*" id="np-photo" style="font-size:12px;color:var(--text2)"></div>
+    <button class="btn btn-primary" onclick="createPlayer()">+ Crear cuenta</button>
+    <div class="err" id="np-msg"></div>
+  </div>`;
+
+  html += `<div style="font-size:13px;font-weight:600;margin:1rem 0 8px;color:var(--text2)">Jugadores (${players.length})</div>`;
+  if (!players.length) {
+    html += `<div class="card"><div style="color:var(--text2);font-size:13px">Todavía no creaste ninguna cuenta.</div></div>`;
+  } else {
+    html += `<div class="card" style="padding:0 1.25rem">`;
+    players.forEach(u => {
+      const filled = Object.keys(byPlayer[u] || {}).length;
+      const done = filled === MATCHES.length;
+      html += `<div class="player-chip">
+        ${avatarHtml(u, 38)}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${u}</div>
+          <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos · <a style="color:#7cc4f0;cursor:pointer" onclick="changePhoto('${u.replace(/'/g,"\\'")}')">cambiar foto</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePass('${u.replace(/'/g,"\\'")}')">contraseña</a></div>
+        </div>
+        <div class="dot ${done ? 'dot-ok' : 'dot-nd'}"></div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  // input oculto para cambiar foto de un jugador existente
+  html += `<input type="file" accept="image/*" id="photo-changer" style="display:none">`;
   document.getElementById('partcont').innerHTML = html;
+}
+
+// Sube una imagen al Storage de Supabase y devuelve la URL pública
+async function uploadAvatar(file, playerName) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const safe = playerName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `${safe}_${Date.now()}.${ext}`;
+  const url = `${SUPABASE_URL}/storage/v1/object/avatars/${path}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': file.type || 'image/jpeg' },
+    body: file
+  });
+  if (!r.ok) throw new Error('upload failed');
+  return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+}
+
+async function createPlayer() {
+  const name = document.getElementById('np-name').value.trim();
+  const pass = document.getElementById('np-pass').value;
+  const fileInput = document.getElementById('np-photo');
+  const msg = document.getElementById('np-msg');
+  msg.style.color = 'var(--red)';
+  if (!name) { msg.textContent = 'Ingresá un nombre'; return; }
+  if (!pass) { msg.textContent = 'Ingresá una contraseña'; return; }
+  // ¿ya existe?
+  const exists = await dbGet('players', `name=ilike.${encodeURIComponent(name)}&select=name`);
+  if (exists && exists.length) { msg.textContent = 'Ya existe una cuenta con ese nombre'; return; }
+  msg.style.color = 'var(--text2)';
+  msg.textContent = 'Creando...';
+  let photoUrl = null;
+  try {
+    if (fileInput.files && fileInput.files[0]) photoUrl = await uploadAvatar(fileInput.files[0], name);
+    await dbUpsert('players', { name, password: pass, photo_url: photoUrl, created_by_admin: true });
+    await loadCache();
+    renderPart();
+  } catch (err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error al crear la cuenta o subir la foto. Probá de nuevo.';
+  }
+}
+
+let photoChangeTarget = null;
+function changePhoto(name) {
+  photoChangeTarget = name;
+  const inp = document.getElementById('photo-changer');
+  inp.onchange = async () => {
+    if (!inp.files || !inp.files[0]) return;
+    try {
+      const url = await uploadAvatar(inp.files[0], name);
+      await dbUpsert('players', { name, photo_url: url });
+      await loadCache();
+      renderPart();
+    } catch (e) { alert('No se pudo subir la foto. Probá de nuevo.'); }
+  };
+  inp.click();
+}
+
+async function changePass(name) {
+  const np = prompt('Nueva contraseña para ' + name + ':');
+  if (np === null || np === '') return;
+  await dbUpsert('players', { name, password: np });
+  alert('Contraseña actualizada para ' + name);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────

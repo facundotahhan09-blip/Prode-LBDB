@@ -42,6 +42,7 @@
   .ok{font-size:12px;color:var(--green);margin-top:4px}
   .nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
   .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+  .avatar-img{border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg3)}
 
   /* Header */
   .header{display:flex;align-items:center;gap:12px;padding:1rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
@@ -158,6 +159,25 @@
   .p1{background:rgba(234,179,8,.2);color:var(--yellow)}
   .p2{background:rgba(148,163,184,.15);color:var(--text2)}
   .p3{background:rgba(180,120,60,.15);color:#cd7f32}
+  /* Movimiento de posición */
+  .mov-up{font-size:9px;color:var(--green);font-weight:700}
+  .mov-down{font-size:9px;color:var(--red);font-weight:700}
+  .mov-same{font-size:9px;color:var(--text3)}
+
+  /* Podio top 3 */
+  .podio{display:flex;justify-content:center;align-items:flex-end;gap:10px;padding:1.25rem .5rem .5rem;margin-bottom:.5rem}
+  .podio-spot{display:flex;flex-direction:column;align-items:center;flex:1;max-width:120px}
+  .podio-medal{font-size:20px;margin-bottom:2px}
+  .podio-av{border-radius:50%;object-fit:cover;background:var(--bg3)}
+  .ring-gold{box-shadow:0 0 0 3px #f5c542, 0 0 14px rgba(245,197,66,.5)}
+  .ring-silver{box-shadow:0 0 0 3px #c4ccd8, 0 0 12px rgba(196,204,216,.4)}
+  .ring-bronze{box-shadow:0 0 0 3px #cd7f32, 0 0 12px rgba(205,127,50,.4)}
+  .podio-name{font-size:11px;font-weight:600;margin-top:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .podio-pts{font-size:11px;font-weight:700;color:#f5c542;margin-top:1px}
+  .podio-step{width:100%;border-radius:8px 8px 0 0;margin-top:8px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;background:linear-gradient(180deg,var(--bg4),var(--bg3))}
+  .step-1{height:64px;background:linear-gradient(180deg,rgba(245,197,66,.35),rgba(245,197,66,.12))}
+  .step-2{height:46px;background:linear-gradient(180deg,rgba(196,204,216,.3),rgba(196,204,216,.1))}
+  .step-3{height:34px;background:linear-gradient(180deg,rgba(205,127,50,.3),rgba(205,127,50,.1))}
 
   /* Stats */
   .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
@@ -312,7 +332,7 @@
   <!-- USER -->
   <div id="usr" class="screen">
     <div class="nav">
-      <div style="display:flex;align-items:center;gap:8px"><div class="avatar" id="unav"></div><span style="font-size:14px;font-weight:600" id="uname"></span></div>
+      <div style="display:flex;align-items:center;gap:8px"><span id="unav"></span><span style="font-size:14px;font-weight:600" id="uname"></span></div>
       <button class="btn btn-sm" onclick="doOut()">Salir</button>
     </div>
     <div class="tabs">
