@@ -240,6 +240,22 @@
   .loading{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px;padding:2rem 0;justify-content:center}
   .spinner{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  /* Reveal épico del ganador de fase */
+  .winner-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+    background:rgba(5,8,16,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:ovIn .35s ease-out}
+  @keyframes ovIn{from{opacity:0}to{opacity:1}}
+  .winner-card{position:relative;text-align:center;max-width:360px;width:100%;padding:2rem 1.5rem;
+    background:linear-gradient(180deg,#141c30,#0d1322);border:1px solid rgba(245,197,66,.4);border-radius:20px;
+    box-shadow:0 0 60px rgba(245,197,66,.25);animation:cardIn .5s cubic-bezier(.2,.8,.2,1) .08s both}
+  @keyframes cardIn{from{opacity:0;transform:scale(.82) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .winner-icon{font-size:42px;animation:trophyFloat 3s ease-in-out infinite;margin-bottom:.25rem}
+  .winner-photo{box-shadow:0 0 0 4px #f5c542,0 0 30px rgba(245,197,66,.6)!important;margin:.25rem auto 0}
+  .winner-kicker{font-size:13px;font-weight:700;letter-spacing:4px;color:var(--text2);margin-top:1rem}
+  .winner-title{font-size:23px;font-weight:800;letter-spacing:1px;margin-top:4px;line-height:1.15;
+    background:linear-gradient(100deg,#a87a0c,#f0c040,#fff6d6,#f5c542,#d49e16,#8a6508);background-size:200% auto;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 4.5s linear infinite}
+  .winner-name{font-size:26px;font-weight:800;color:#fff;margin-top:1rem}
+  .winner-pts{font-size:13px;color:var(--text2);margin-top:4px}
 </style>
 </head>
 <body>
@@ -337,7 +353,7 @@
     </div>
     <div class="tabs">
       <button class="tab on" onclick="st('tp',this)">Mis pronósticos</button>
-      <button class="tab" onclick="st('tt',this)">Tabla</button>
+      <button class="tab" onclick="st('tt',this)">Tabla jugadores</button>
       <button class="tab" onclick="st('tr',this)">Mis resultados</button>
       <button class="tab" onclick="st('te',this)">Posiciones</button>
     </div>
@@ -362,7 +378,7 @@
     <div class="tabs">
       <button class="tab on" onclick="st('ar',this)">Resultados</button>
       <button class="tab" onclick="st('ae2',this)">Posiciones</button>
-      <button class="tab" onclick="st('at',this)">Tabla</button>
+      <button class="tab" onclick="st('at',this)">Tabla jugadores</button>
       <button class="tab" onclick="st('ac',this)">Config</button>
       <button class="tab" onclick="st('apa',this)">Jugadores</button>
     </div>

@@ -410,7 +410,7 @@ resumeSession();
 async function loadCache() {
   const [res, players, bres, bslots, bcfg] = await Promise.all([
     dbGet('results', 'select=match_id,home_goals,away_goals'),
-    dbGet('players_public', 'select=name,photo_url,prev_rank'),
+    dbGet('players_public', 'select=name,photo_url,prev_rank,prev_grupos,prev_elim'),
     dbGet('bracket_results', 'select=match_id,home_team,away_team,home_goals,away_goals,home_pens,away_pens,winner,kickoff'),
     dbGet('bracket_slots', 'select=slot,team'),
     dbGet('bracket_config', 'id=eq.1')
@@ -419,7 +419,7 @@ async function loadCache() {
   res.forEach(r => cache.results[r.match_id] = r);
   cache.players = players.map(p => p.name);
   cache.playerInfo = {};
-  players.forEach(p => cache.playerInfo[p.name] = { photo: p.photo_url, prevRank: p.prev_rank });
+  players.forEach(p => cache.playerInfo[p.name] = { photo: p.photo_url, prevGlobal: p.prev_rank, prevGrupos: p.prev_grupos, prevElim: p.prev_elim });
   cache.config = {}; // las contraseñas viven cerradas en el servidor; no se cachean
   cache.bracketResults = {};
   bres.forEach(b => cache.bracketResults[b.match_id] = b);
@@ -787,6 +787,7 @@ async function saveRes() {
   const btn = event.target;
   btn.disabled = true;
   btn.textContent = 'Guardando...';
+  await autoSnapshot(); // foto de posiciones previas (para las flechas ▲▼)
   const toSave = [];
   MATCHES.forEach(m => {
     const h = document.getElementById('ma' + m.id + 'h');
@@ -862,49 +863,90 @@ function renderGrpStandings(contId) {
 
 // ── TABLA JUGADORES ──────────────────────────────────────────────────────────
 
+// ── TABLA JUGADORES (3 vistas: Global / Grupos / Eliminatorias) ───────────────
+let selTblView = 'global';
+
+// Puntaje desglosado por jugador (grupos y bracket por separado)
+function computeAllScores(byPlayer, bpByPlayer) {
+  const scores = {};
+  cache.players.forEach(u => {
+    let gTot = 0, gEx = 0, gWi = 0, bTot = 0, bEx = 0, bWi = 0;
+    MATCHES.forEach(m => {
+      const p = byPlayer[u]?.[m.id]; if (!p) return;
+      const pp = pts(m.id, p.h, p.a);
+      if (pp === 3) { gTot += 3; gEx++; } else if (pp === 1) { gTot += 1; gWi++; }
+    });
+    ALL_BRACKET_MATCHES.forEach(m => {
+      const p = bpByPlayer[u]?.[m.id]; if (!p) return;
+      const pp = scoreBracketPts(m.id, p.h, p.a);
+      if (pp === 3) { bTot += 3; bEx++; } else if (pp === 1) { bTot += 1; bWi++; }
+    });
+    scores[u] = { gTot, gEx, gWi, bTot, bEx, bWi };
+  });
+  return scores;
+}
+
+// Ranking ordenado para una vista
+function rankView(scores, view) {
+  const rows = Object.entries(scores).map(([name, s]) => {
+    let tot, ex, wi;
+    if (view === 'grupos') { tot = s.gTot; ex = s.gEx; wi = s.gWi; }
+    else if (view === 'elim') { tot = s.bTot; ex = s.bEx; wi = s.bWi; }
+    else { tot = s.gTot + s.bTot; ex = s.gEx + s.bEx; wi = s.gWi + s.bWi; }
+    return { name, tot, ex, wi };
+  });
+  rows.sort((a, b) => b.tot - a.tot || b.ex - a.ex || b.wi - a.wi);
+  return rows;
+}
+
+function prevRankFor(name, view) {
+  const info = cache.playerInfo[name]; if (!info) return null;
+  return view === 'grupos' ? info.prevGrupos : view === 'elim' ? info.prevElim : info.prevGlobal;
+}
+
 async function renderTbl(id) {
   document.getElementById(id).innerHTML = '<div class="loading"><div class="spinner"></div>Cargando...</div>';
   const { byPlayer, bpByPlayer } = await loadAllProns();
-  const players = cache.players;
-  const scores = {};
-  players.forEach(u => {
-    let tot = 0, ex = 0, wi = 0;
-    MATCHES.forEach(m => {
-      const p = byPlayer[u]?.[m.id];
-      const pp = p ? pts(m.id, p.h, p.a) : 0;
-      if (pp === 3) { tot += 3; ex++; }
-      else if (pp === 1) { tot += 1; wi++; }
-    });
-    let ep = 0;
-    ALL_BRACKET_MATCHES.forEach(m => {
-      const p = bpByPlayer[u]?.[m.id];
-      if (!p) return;
-      const pp = scoreBracketPts(m.id, p.h, p.a);
-      if (pp === 3) { ep += 3; ex++; }
-      else if (pp === 1) { ep += 1; wi++; }
-    });
-    scores[u] = { tot: tot + ep, ex, wi };
-  });
-  const sorted = Object.entries(scores).sort((a, b) => b[1].tot - a[1].tot || b[1].ex - a[1].ex);
+  cache._scores = computeAllScores(byPlayer, bpByPlayer);
+  paintTbl(id);
+}
 
-  let html = '';
+function setTblView(view, id) { selTblView = view; paintTbl(id); }
+
+function paintTbl(id) {
+  const scores = cache._scores || {};
+  const view = selTblView;
+  const ranked = rankView(scores, view);
+
+  // Sub-selector de vistas
+  let html = `<div class="grp-tabs" style="margin-bottom:1rem">`;
+  [['global', 'Global'], ['grupos', 'Fase de Grupos'], ['elim', 'Eliminatorias']].forEach(([k, label]) => {
+    html += `<button class="gbt${view === k ? ' on' : ''}" onclick="setTblView('${k}','${id}')">${label}</button>`;
+  });
+  html += `</div>`;
+
+  // Botón para volver a ver el reveal del ganador (si la fase ya terminó)
+  if (phaseComplete(view) && ranked.length) {
+    html += `<button class="btn btn-sm btn-full" style="margin-bottom:10px" onclick='showWinnerReveal("${view}", ${JSON.stringify(ranked[0]).replace(/'/g, "&#39;")})'>🏆 Ver ganador</button>`;
+  }
 
   // ----- PODIO TOP 3 -----
-  if (sorted.length >= 1) {
-    const podioOrder = [1, 0, 2]; // 2° izq, 1° centro, 3° der
+  if (ranked.length >= 1) {
+    const podioOrder = [1, 0, 2];
     html += `<div class="podio">`;
     podioOrder.forEach(pos => {
-      if (!sorted[pos]) { html += `<div class="podio-spot"></div>`; return; }
-      const [name, s] = sorted[pos];
+      if (!ranked[pos]) { html += `<div class="podio-spot"></div>`; return; }
+      const s = ranked[pos];
       const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : '🥉';
       const stepCls = pos === 0 ? 'step-1' : pos === 1 ? 'step-2' : 'step-3';
       const ringCls = pos === 0 ? 'ring-gold' : pos === 1 ? 'ring-silver' : 'ring-bronze';
+      const mine = s.name === CU ? '<div style="font-size:10px;color:var(--accent);font-weight:700;margin-top:1px">VOS</div>' : '';
       html += `<div class="podio-spot">
         <div class="podio-medal">${medal}</div>
-        ${avatarHtml(name, pos===0?64:54, 'podio-av '+ringCls)}
-        <div class="podio-name">${name}</div>
+        ${avatarHtml(s.name, pos === 0 ? 64 : 54, 'podio-av ' + ringCls)}
+        <div class="podio-name">${s.name}</div>${mine}
         <div class="podio-pts">${s.tot} pts</div>
-        <div class="podio-step ${stepCls}">${pos+1}</div>
+        <div class="podio-step ${stepCls}">${pos + 1}</div>
       </div>`;
     });
     html += `</div>`;
@@ -918,19 +960,20 @@ async function renderTbl(id) {
     <th style="text-align:center">Exac.</th>
     <th style="text-align:center">Gan.</th>
   </tr></thead><tbody>`;
-  sorted.forEach(([u, s], i) => {
+  ranked.forEach((s, i) => {
     const rank = i + 1;
     const pc = i === 0 ? 'p1' : i === 1 ? 'p2' : i === 2 ? 'p3' : '';
-    // movimiento de posición respecto a prev_rank guardado
-    const prev = cache.playerInfo[u]?.prevRank;
+    const prev = prevRankFor(s.name, view);
     let mov = '<span class="mov-same">—</span>';
     if (prev && prev !== rank) {
       if (prev > rank) mov = `<span class="mov-up">▲${prev - rank}</span>`;
       else mov = `<span class="mov-down">▼${rank - prev}</span>`;
     }
-    html += `<tr>
+    const mine = s.name === CU;
+    const tag = mine ? ' <span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(59,130,246,.15);padding:1px 5px;border-radius:6px">VOS</span>' : '';
+    html += `<tr style="${mine ? 'background:rgba(59,130,246,.10)' : ''}">
       <td style="padding-left:12px"><div style="display:flex;align-items:center;gap:4px"><span class="pn ${pc}">${rank}</span>${mov}</div></td>
-      <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(u, 30)}<span>${u}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px">${avatarHtml(s.name, 30)}<span>${s.name}</span>${tag}</div></td>
       <td style="text-align:center;font-weight:700;font-size:14px">${s.tot}</td>
       <td style="text-align:center;color:var(--green)">${s.ex}</td>
       <td style="text-align:center;color:var(--yellow)">${s.wi}</td>
@@ -938,35 +981,64 @@ async function renderTbl(id) {
   });
   html += '</tbody></table></div>';
 
-  // botón admin para "congelar" posiciones actuales (para el próximo movimiento)
-  if (IA) {
-    html += `<button class="btn btn-sm" style="margin-top:10px" onclick="snapshotRanks()">📌 Fijar posiciones actuales (para calcular movimientos)</button><div class="ok" id="snapmsg"></div>`;
-  }
-
   document.getElementById(id).innerHTML = html;
+
+  // Al entrar a una pestaña cuya fase ya terminó, mostrar el reveal (una vez por persona)
+  maybeShowWinner(view, ranked);
 }
 
-// Guarda el ranking actual como prev_rank de cada jugador (para mostrar ↑↓ después)
-async function snapshotRanks() {
-  const { byPlayer, bpByPlayer } = await loadAllProns();
-  const scores = {};
-  cache.players.forEach(u => {
-    let tot = 0;
-    MATCHES.forEach(m => { const p = byPlayer[u]?.[m.id]; const pp = p ? pts(m.id,p.h,p.a) : 0; if (pp) tot += pp; });
-    ALL_BRACKET_MATCHES.forEach(m => { const p = bpByPlayer[u]?.[m.id]; if (p) { const pp = scoreBracketPts(m.id,p.h,p.a); if (pp) tot += pp; } });
-    scores[u] = tot;
-  });
-  const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
-  const rows = sorted.map(([name], i) => ({ name, prev_rank: i + 1 }));
-  try { await rpc('prode_admin_snapshot_ranks', { p_token: TOKEN, p_rows: rows }); }
-  catch (err) {
-    const m = document.getElementById('snapmsg');
-    if (m) { m.style.color = 'var(--red)'; m.textContent = 'Error: ' + err.message; }
-    return;
-  }
-  rows.forEach(r => { if (cache.playerInfo[r.name]) cache.playerInfo[r.name].prevRank = r.prev_rank; });
-  const msg = document.getElementById('snapmsg');
-  if (msg) { msg.textContent = '✓ Posiciones fijadas'; setTimeout(() => msg.textContent = '', 2500); }
+// ── GANADOR DE FASE: detección + reveal épico ─────────────────────────────────
+function phaseComplete(view) {
+  if (view === 'grupos') return allGroupsComplete();
+  const f = cache.bracketResults['FINAL'];
+  return !!(f && f.winner); // elim y global cierran con la final jugada
+}
+
+function maybeShowWinner(view, ranked) {
+  if (!ranked.length || !phaseComplete(view)) return;
+  const key = 'prode_seen_winner_' + view;
+  let seen = false;
+  try { seen = localStorage.getItem(key) === '1'; } catch (_) {}
+  if (seen) return;
+  try { localStorage.setItem(key, '1'); } catch (_) {}
+  showWinnerReveal(view, ranked[0]);
+}
+
+function showWinnerReveal(view, w) {
+  const cfg = {
+    grupos: { kicker: 'GANADOR', title: 'FASE DE GRUPOS', icon: '🏆' },
+    elim:   { kicker: 'GANADOR', title: 'ELIMINATORIAS', icon: '🏆' },
+    global: { kicker: 'CAMPEÓN', title: 'PRODE MUNDIALISTA · EDICIÓN LBDB', icon: '👑' }
+  }[view] || {};
+  const ov = document.createElement('div');
+  ov.className = 'winner-overlay';
+  ov.onclick = e => { if (e.target === ov) ov.remove(); };
+  ov.innerHTML = `<div class="winner-card">
+    <div class="winner-icon">${cfg.icon}</div>
+    ${avatarHtml(w.name, 120, 'winner-photo')}
+    <div class="winner-kicker">${cfg.kicker}</div>
+    <div class="winner-title">${cfg.title}</div>
+    <div class="winner-name">${w.name}</div>
+    <div class="winner-pts">${w.tot} pts · ${w.ex} exactos</div>
+    <button class="login-btn" style="margin-top:1.25rem" onclick="this.closest('.winner-overlay').remove()">Cerrar</button>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+// "Foto" automática de posiciones (las 3 tablas) antes de cargar resultados nuevos,
+// para que las flechas ▲▼ reflejen el movimiento de esa carga. No bloquea si falla.
+async function autoSnapshot() {
+  try {
+    const { byPlayer, bpByPlayer } = await loadAllProns();
+    const scores = computeAllScores(byPlayer, bpByPlayer);
+    const rankOf = arr => { const m = {}; arr.forEach((r, i) => m[r.name] = i + 1); return m; };
+    const rg = rankOf(rankView(scores, 'global'));
+    const rgr = rankOf(rankView(scores, 'grupos'));
+    const rel = rankOf(rankView(scores, 'elim'));
+    const rows = cache.players.map(name => ({ name, prev_global: rg[name], prev_grupos: rgr[name], prev_elim: rel[name] }));
+    await rpc('prode_admin_snapshot_ranks', { p_token: TOKEN, p_rows: rows });
+    rows.forEach(r => { const info = cache.playerInfo[r.name]; if (info) { info.prevGlobal = r.prev_global; info.prevGrupos = r.prev_grupos; info.prevElim = r.prev_elim; } });
+  } catch (_) { /* el snapshot es secundario: si falla, el guardado sigue igual */ }
 }
 
 // ── MIS RESULTADOS ───────────────────────────────────────────────────────────
@@ -1259,6 +1331,7 @@ async function reopenGroups() {
 // Admin guarda resultados del bracket (calcula ganador y avanza)
 async function saveBracketResults() {
   const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando...';
+  await autoSnapshot(); // foto de posiciones previas (para las flechas ▲▼)
   const toSave = [];
   ALL_BRACKET_MATCHES.forEach(m => {
     const h = document.getElementById('br'+m.id+'h');
