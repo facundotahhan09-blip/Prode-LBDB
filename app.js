@@ -674,6 +674,7 @@ function renderProns(elId, mode) {
     });
     html += '</div>';
   });
+  if (!isA) html += `<button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div>`;
   document.getElementById(elId).innerHTML = html;
 }
 
