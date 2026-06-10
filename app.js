@@ -674,7 +674,8 @@ function renderProns(elId, mode) {
     });
     html += '</div>';
   });
-  if (!isA) html += `<button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div>`;
+  if (!isA) html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Puntos: 3 exacto · 1 ganador · 0 nada. Podés modificar hasta que arranca el partido.</div>
+    <button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div>`;
   document.getElementById(elId).innerHTML = html;
 }
 
