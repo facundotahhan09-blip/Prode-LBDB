@@ -21,6 +21,23 @@ async function dbDelete(table, params) {
   await fetch(`${sb(table).url}?${params}`, { method: 'DELETE', headers: sb(table).headers });
 }
 
+// Llama a una función (RPC) de Supabase. Toda escritura pasa por acá: el servidor
+// verifica la contraseña antes de tocar nada. Devuelve el resultado ya parseado.
+async function rpc(fn, args) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args || {})
+  });
+  if (!r.ok) {
+    let msg = 'Error de servidor';
+    try { const e = await r.json(); msg = e.message || e.hint || msg; } catch (_) {}
+    throw new Error(msg);
+  }
+  const txt = await r.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
 // ── DATA ─────────────────────────────────────────────────────────────────────
 
 // Códigos ISO para flagcdn.com (funcionan en todos los navegadores incluyendo Windows)
@@ -207,7 +224,7 @@ const THIRD_SLOTS = [
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 
-let CU = null, IA = false;
+let CU = null, CUPASS = null, IA = false, ADMINPASS = null;
 let cache = { results: {}, players: [], playerInfo: {}, prons: {}, config: {},
               bracketResults: {}, bracketProns: {}, bracketSlots: {}, bracketConfirmed: false };
 
@@ -237,6 +254,30 @@ function pts(matchId, ph, pa) {
   if (p === r.home_goals && q === r.away_goals) return 3;
   if (win(p,q) === win(r.home_goals, r.away_goals)) return 1;
   return 0;
+}
+
+// Convierte la fecha/hora de un partido de grupos (ej "Jue 11 jun" + "16:00")
+// a un objeto Date en hora argentina (UTC-3). Devuelve null si no se puede.
+const MESES_ABR = { ene:0, feb:1, mar:2, abr:3, may:4, jun:5, jul:6, ago:7, sep:8, oct:9, nov:10, dic:11 };
+function matchKickoff(m) {
+  if (!m || !m.date || !m.time) return null;
+  // date viene como "Jue 11 jun" → extraer día y mes
+  const parts = m.date.split(' ');
+  if (parts.length < 3) return null;
+  const day = parseInt(parts[1]);
+  const mes = MESES_ABR[parts[2].toLowerCase().slice(0,3)];
+  if (isNaN(day) || mes === undefined) return null;
+  const [hh, mm] = m.time.split(':').map(x => parseInt(x));
+  if (isNaN(hh)) return null;
+  // Construir el instante en ARG (UTC-3): equivale a UTC = hora + 3
+  return new Date(Date.UTC(2026, mes, day, hh + 3, mm || 0, 0));
+}
+
+// ¿Ya arrancó un partido de la fase de grupos? (bloquea su pronóstico)
+function groupMatchStarted(m) {
+  const ko = matchKickoff(m);
+  if (!ko) return false;
+  return new Date() >= ko;
 }
 
 function go(s) {
@@ -283,13 +324,15 @@ async function doLogin() {
   const e = document.getElementById('le');
   if (!n) { e.textContent = 'Ingresá tu nombre'; return; }
   if (!p) { e.textContent = 'Ingresá tu contraseña'; return; }
-  // Buscar la cuenta del jugador (case-insensitive)
-  const found = await dbGet('players', `name=ilike.${encodeURIComponent(n)}&select=name,password`);
-  const acct = found && found[0];
-  if (!acct) { e.textContent = 'No existe una cuenta con ese nombre. Pedile al organizador que te cree una.'; return; }
-  if (!acct.password || acct.password !== p) { e.textContent = 'Contraseña incorrecta'; return; }
+  // Verificación en el servidor: la contraseña nunca viaja de vuelta al navegador.
+  let rows;
+  try {
+    rows = await rpc('prode_login', { p_name: n, p_pass: p });
+  } catch (err) { e.textContent = 'Error de conexión. Probá de nuevo.'; return; }
+  const acct = rows && rows[0];
+  if (!acct) { e.textContent = 'Nombre o contraseña incorrectos. Si no tenés cuenta, pedísela al organizador.'; return; }
   e.textContent = '';
-  CU = acct.name; IA = false; // usar el nombre tal como está guardado
+  CU = acct.name; CUPASS = p; IA = false; // usar el nombre tal como está guardado
   await loadCache();
   renderUsr();
   go('usr');
@@ -298,17 +341,19 @@ async function doLogin() {
 async function doAdmin() {
   const p = document.getElementById('ap').value;
   const e = document.getElementById('ae');
-  const cfg = await dbGet('config', 'id=eq.1');
-  if (!cfg[0] || p !== cfg[0].admin_pass) { e.textContent = 'Contraseña incorrecta'; return; }
+  let ok;
+  try { ok = await rpc('prode_admin_login', { p_pass: p }); }
+  catch (err) { e.textContent = 'Error de conexión. Probá de nuevo.'; return; }
+  if (ok !== true) { e.textContent = 'Contraseña incorrecta'; return; }
   e.textContent = '';
-  IA = true;
+  IA = true; ADMINPASS = p;
   await loadCache();
   renderAdm();
   go('adm');
 }
 
 function doOut() {
-  CU = null; IA = false;
+  CU = null; CUPASS = null; IA = false; ADMINPASS = null;
   document.getElementById('ln').value = '';
   document.getElementById('lp').value = '';
   go('sl');
@@ -317,10 +362,9 @@ function doOut() {
 // ── CACHE ────────────────────────────────────────────────────────────────────
 
 async function loadCache() {
-  const [res, players, cfg, bres, bslots, bcfg] = await Promise.all([
+  const [res, players, bres, bslots, bcfg] = await Promise.all([
     dbGet('results', 'select=match_id,home_goals,away_goals'),
-    dbGet('players', 'select=name,photo_url,prev_rank'),
-    dbGet('config', 'id=eq.1'),
+    dbGet('players_public', 'select=name,photo_url,prev_rank'),
     dbGet('bracket_results', 'select=match_id,home_team,away_team,home_goals,away_goals,home_pens,away_pens,winner,kickoff'),
     dbGet('bracket_slots', 'select=slot,team'),
     dbGet('bracket_config', 'id=eq.1')
@@ -330,7 +374,7 @@ async function loadCache() {
   cache.players = players.map(p => p.name);
   cache.playerInfo = {};
   players.forEach(p => cache.playerInfo[p.name] = { photo: p.photo_url, prevRank: p.prev_rank });
-  cache.config = cfg[0] || {};
+  cache.config = {}; // las contraseñas viven cerradas en el servidor; no se cachean
   cache.bracketResults = {};
   bres.forEach(b => cache.bracketResults[b.match_id] = b);
   cache.bracketSlots = {};
@@ -489,8 +533,6 @@ function renderUsr() {
 function renderAdm() {
   buildGT('gsa', 'a');
   renderProns('pa', 'a');
-  document.getElementById('cfp').value = cache.config.player_pass || '';
-  document.getElementById('cfa').value = cache.config.admin_pass || '';
   renderTbl('atblcont');
 }
 
@@ -548,11 +590,16 @@ function renderProns(elId, mode) {
       const ph = isA ? (r ? r.home_goals : '') : (cache.prons[m.id]?.h ?? '');
       const pa = isA ? (r ? r.away_goals : '') : (cache.prons[m.id]?.a ?? '');
       const hasR = !!r;
+      const started = groupMatchStarted(m); // ¿ya arrancó?
+      // El jugador no puede editar si hay resultado o si el partido arrancó
+      const lockUser = !isA && (hasR || started);
       const p = hasR && !isA ? pts(m.id, cache.prons[m.id]?.h, cache.prons[m.id]?.a) : null;
       let badge = '';
       if (p === 3) badge = '<span class="badge bex">+3 pts</span>';
       else if (p === 1) badge = '<span class="badge bwi">+1 pt</span>';
       else if (p === 0 && hasR) badge = '<span class="badge bno">0 pts</span>';
+      // candado si arrancó y todavía no hay resultado cargado (para el jugador)
+      const lockIcon = (!isA && started && !hasR) ? '<span title="Pronóstico cerrado" style="margin-left:4px">🔒</span>' : '';
       const color = GRP_COLORS[m.g];
       html += `<div class="match-card">
         <div class="match-meta">
@@ -560,13 +607,14 @@ function renderProns(elId, mode) {
           <span class="match-time">${m.time} ARG</span>
           <span style="color:var(--text3)">·</span>
           <span class="match-sede">${m.sede}</span>
+          ${lockIcon}
           ${badge}
         </div>
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${hasR && !isA ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
-          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${hasR && !isA ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
         </div>
       </div>`;
@@ -582,6 +630,7 @@ async function savePron() {
   btn.textContent = 'Guardando...';
   const toSave = [];
   MATCHES.forEach(m => {
+    if (groupMatchStarted(m)) return; // no guardar partidos que ya arrancaron
     const h = document.getElementById('mu' + m.id + 'h');
     const a = document.getElementById('mu' + m.id + 'a');
     if (h && a && h.value !== '' && a.value !== '') {
@@ -589,10 +638,19 @@ async function savePron() {
       cache.prons[m.id] = { h: parseInt(h.value), a: parseInt(a.value) };
     }
   });
-  if (toSave.length) await dbUpsert('predictions', toSave);
+  if (toSave.length) {
+    try { await rpc('prode_save_predictions', { p_name: CU, p_pass: CUPASS, p_rows: toSave }); }
+    catch (err) {
+      btn.disabled = false; btn.innerHTML = '💾 Guardar pronósticos';
+      document.getElementById('pmsg').style.color = 'var(--red)';
+      document.getElementById('pmsg').textContent = 'No se pudieron guardar: ' + err.message;
+      return;
+    }
+  }
   btn.disabled = false;
   btn.innerHTML = '💾 Guardar pronósticos';
   const msg = document.getElementById('pmsg');
+  msg.style.color = 'var(--green)';
   msg.textContent = '✓ Pronósticos guardados';
   setTimeout(() => msg.textContent = '', 3000);
 }
@@ -610,11 +668,20 @@ async function saveRes() {
       cache.results[m.id] = { home_goals: parseInt(h.value), away_goals: parseInt(a.value) };
     }
   });
-  if (toSave.length) await dbUpsert('results', toSave);
+  if (toSave.length) {
+    try { await rpc('prode_admin_save_results', { p_pass: ADMINPASS, p_rows: toSave }); }
+    catch (err) {
+      btn.disabled = false; btn.innerHTML = '✓ Guardar resultados';
+      const m = document.getElementById('rmsg');
+      m.style.color = 'var(--red)'; m.textContent = 'No se pudieron guardar: ' + err.message;
+      return;
+    }
+  }
   btn.disabled = false;
   btn.innerHTML = '✓ Guardar resultados';
   renderTbl('atblcont');
   const msg = document.getElementById('rmsg');
+  msg.style.color = 'var(--green)';
   msg.textContent = '✓ Resultados guardados';
   setTimeout(() => msg.textContent = '', 3000);
 }
@@ -763,7 +830,12 @@ async function snapshotRanks() {
   });
   const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
   const rows = sorted.map(([name], i) => ({ name, prev_rank: i + 1 }));
-  await dbUpsert('players', rows);
+  try { await rpc('prode_admin_snapshot_ranks', { p_pass: ADMINPASS, p_rows: rows }); }
+  catch (err) {
+    const m = document.getElementById('snapmsg');
+    if (m) { m.style.color = 'var(--red)'; m.textContent = 'Error: ' + err.message; }
+    return;
+  }
   rows.forEach(r => { if (cache.playerInfo[r.name]) cache.playerInfo[r.name].prevRank = r.prev_rank; });
   const msg = document.getElementById('snapmsg');
   if (msg) { msg.textContent = '✓ Posiciones fijadas'; setTimeout(() => msg.textContent = '', 2500); }
@@ -820,11 +892,18 @@ function renderMyRes() {
 
 // ── BRACKET (FASE ELIMINATORIA) ────────────────────────────────────────────────
 
-// Helper: ¿el partido ya arrancó? (bloquea predicciones)
+// Helper: ¿el partido del bracket ya arrancó? (bloquea predicciones)
 function matchStarted(mid) {
+  // Buscar el partido en la estructura del bracket para usar su fecha/hora
+  const m = ALL_BRACKET_MATCHES.find(x => x.id === mid);
+  if (m) {
+    const ko = matchKickoff(m);
+    if (ko) return new Date() >= ko;
+  }
+  // fallback: si hay kickoff guardado en el resultado
   const r = cache.bracketResults[mid];
   if (r?.kickoff) return new Date(r.kickoff) <= new Date();
-  return false; // si no hay kickoff definido, se puede predecir
+  return false;
 }
 
 // Marcador final de un partido del bracket (para mostrar)
@@ -1033,8 +1112,8 @@ async function confirmGroups() {
   if (!allGroupsComplete()) return;
   const auto = computeAutoSlots();
   const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
-  await dbUpsert('bracket_slots', rows);
-  await dbUpsert('bracket_config', { id: 1, groups_confirmed: true });
+  try { await rpc('prode_admin_save_bracket_slots', { p_pass: ADMINPASS, p_rows: rows, p_confirmed: true }); }
+  catch (err) { alert('No se pudo confirmar: ' + err.message); return; }
   cache.bracketSlots = auto;
   cache.bracketConfirmed = true;
   renderProns('pa', 'a');
@@ -1043,7 +1122,8 @@ async function confirmGroups() {
 async function reopenGroups() {
   const auto = computeAutoSlots();
   const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
-  await dbUpsert('bracket_slots', rows);
+  try { await rpc('prode_admin_save_bracket_slots', { p_pass: ADMINPASS, p_rows: rows, p_confirmed: null }); }
+  catch (err) { alert('No se pudo guardar: ' + err.message); return; }
   cache.bracketSlots = auto;
   renderProns('pa', 'a');
 }
@@ -1078,7 +1158,15 @@ async function saveBracketResults() {
     toSave.push(row);
     cache.bracketResults[m.id] = row;
   });
-  if (toSave.length) await dbUpsert('bracket_results', toSave);
+  if (toSave.length) {
+    try { await rpc('prode_admin_save_bracket_results', { p_pass: ADMINPASS, p_rows: toSave }); }
+    catch (err) {
+      btn.disabled = false; btn.innerHTML = '✓ Guardar resultados';
+      const m = document.getElementById('bmsg');
+      if (m) { m.style.color = 'var(--red)'; m.textContent = 'No se pudieron guardar: ' + err.message; }
+      return;
+    }
+  }
   await loadCache();
   renderProns('pa', 'a');
   const msg = document.getElementById('bmsg');
@@ -1098,7 +1186,15 @@ async function saveBracketProns() {
       cache.bracketProns[m.id] = { h: parseInt(h.value), a: parseInt(a.value) };
     }
   });
-  if (toSave.length) await dbUpsert('bracket_predictions', toSave);
+  if (toSave.length) {
+    try { await rpc('prode_save_bracket_predictions', { p_name: CU, p_pass: CUPASS, p_rows: toSave }); }
+    catch (err) {
+      btn.disabled = false; btn.innerHTML = '💾 Guardar mis predicciones';
+      const m = document.getElementById('bpmsg');
+      if (m) { m.style.color = 'var(--red)'; m.textContent = 'No se pudieron guardar: ' + err.message; }
+      return;
+    }
+  }
   btn.disabled = false; btn.innerHTML = '💾 Guardar mis predicciones';
   const msg = document.getElementById('bpmsg');
   if (msg) { msg.textContent = '✓ Predicciones guardadas'; setTimeout(() => msg.textContent = '', 2500); }
@@ -1107,11 +1203,17 @@ async function saveBracketProns() {
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
 async function saveCfg() {
-  const pp = document.getElementById('cfp').value;
-  const ap = document.getElementById('cfa').value;
-  await dbUpsert('config', { id: 1, player_pass: pp, admin_pass: ap });
-  cache.config = { player_pass: pp, admin_pass: ap };
+  const pp = document.getElementById('cfp').value;     // contraseña a compartir (etiqueta)
+  const ap = document.getElementById('cfa').value;     // NUEVA contraseña admin (vacío = no cambiar)
   const msg = document.getElementById('cfmsg');
+  try {
+    await rpc('prode_admin_save_config', { p_pass: ADMINPASS, p_new_player_pass: pp, p_new_admin_pass: ap });
+  } catch (err) {
+    msg.style.color = 'var(--red)'; msg.textContent = 'Error: ' + err.message; return;
+  }
+  // Si se cambió la contraseña de admin, actualizar la de la sesión actual
+  if (ap && ap !== '') { ADMINPASS = ap; document.getElementById('cfa').value = ''; }
+  msg.style.color = 'var(--green)';
   msg.textContent = '✓ Guardado';
   setTimeout(() => msg.textContent = '', 2500);
 }
@@ -1180,19 +1282,19 @@ async function createPlayer() {
   if (!name) { msg.textContent = 'Ingresá un nombre'; return; }
   if (!pass) { msg.textContent = 'Ingresá una contraseña'; return; }
   // ¿ya existe?
-  const exists = await dbGet('players', `name=ilike.${encodeURIComponent(name)}&select=name`);
+  const exists = await dbGet('players_public', `name=ilike.${encodeURIComponent(name)}&select=name`);
   if (exists && exists.length) { msg.textContent = 'Ya existe una cuenta con ese nombre'; return; }
   msg.style.color = 'var(--text2)';
   msg.textContent = 'Creando...';
   let photoUrl = null;
   try {
     if (fileInput.files && fileInput.files[0]) photoUrl = await uploadAvatar(fileInput.files[0], name);
-    await dbUpsert('players', { name, password: pass, photo_url: photoUrl, created_by_admin: true });
+    await rpc('prode_admin_create_player', { p_pass: ADMINPASS, p_name: name, p_player_pass: pass, p_photo_url: photoUrl });
     await loadCache();
     renderPart();
   } catch (err) {
     msg.style.color = 'var(--red)';
-    msg.textContent = 'Error al crear la cuenta o subir la foto. Probá de nuevo.';
+    msg.textContent = 'Error al crear la cuenta: ' + err.message;
   }
 }
 
@@ -1204,7 +1306,7 @@ function changePhoto(name) {
     if (!inp.files || !inp.files[0]) return;
     try {
       const url = await uploadAvatar(inp.files[0], name);
-      await dbUpsert('players', { name, photo_url: url });
+      await rpc('prode_admin_change_player_photo', { p_pass: ADMINPASS, p_name: name, p_photo_url: url });
       await loadCache();
       renderPart();
     } catch (e) { alert('No se pudo subir la foto. Probá de nuevo.'); }
@@ -1215,8 +1317,10 @@ function changePhoto(name) {
 async function changePass(name) {
   const np = prompt('Nueva contraseña para ' + name + ':');
   if (np === null || np === '') return;
-  await dbUpsert('players', { name, password: np });
-  alert('Contraseña actualizada para ' + name);
+  try {
+    await rpc('prode_admin_change_player_pass', { p_pass: ADMINPASS, p_name: name, p_new_pass: np });
+    alert('Contraseña actualizada para ' + name);
+  } catch (err) { alert('No se pudo actualizar: ' + err.message); }
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
