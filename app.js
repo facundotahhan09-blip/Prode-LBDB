@@ -224,7 +224,7 @@ const THIRD_SLOTS = [
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 
-let CU = null, CUPASS = null, IA = false, ADMINPASS = null;
+let CU = null, IA = false, TOKEN = null, idleTimer = null;
 let cache = { results: {}, players: [], playerInfo: {}, prons: {}, config: {},
               bracketResults: {}, bracketProns: {}, bracketSlots: {}, bracketConfirmed: false };
 
@@ -332,32 +332,78 @@ async function doLogin() {
   const acct = rows && rows[0];
   if (!acct) { e.textContent = 'Nombre o contraseña incorrectos. Si no tenés cuenta, pedísela al organizador.'; return; }
   e.textContent = '';
-  CU = acct.name; CUPASS = p; IA = false; // usar el nombre tal como está guardado
+  CU = acct.name; TOKEN = acct.token; IA = false; // usar el nombre tal como está guardado
+  persistSession('player', acct.name);
   await loadCache();
   renderUsr();
   go('usr');
+  startIdle();
 }
 
 async function doAdmin() {
   const p = document.getElementById('ap').value;
   const e = document.getElementById('ae');
-  let ok;
-  try { ok = await rpc('prode_admin_login', { p_pass: p }); }
+  let token;
+  try { token = await rpc('prode_admin_login', { p_pass: p }); }
   catch (err) { e.textContent = 'Error de conexión. Probá de nuevo.'; return; }
-  if (ok !== true) { e.textContent = 'Contraseña incorrecta'; return; }
+  if (!token) { e.textContent = 'Contraseña incorrecta'; return; }
   e.textContent = '';
-  IA = true; ADMINPASS = p;
+  IA = true; TOKEN = token;
+  persistSession('admin', null);
   await loadCache();
   renderAdm();
   go('adm');
+  startIdle();
 }
 
-function doOut() {
-  CU = null; CUPASS = null; IA = false; ADMINPASS = null;
+async function doOut(byIdle) {
+  try { if (TOKEN) await rpc('prode_logout', { p_token: TOKEN }); } catch (_) {}
+  CU = null; IA = false; TOKEN = null;
+  if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+  clearSession();
   document.getElementById('ln').value = '';
   document.getElementById('lp').value = '';
+  const e = document.getElementById('le');
+  if (e) e.textContent = (byIdle === true) ? 'Tu sesión se cerró por inactividad.' : '';
   go('sl');
 }
+
+// ── SESIÓN (token guardado en el navegador + cierre por inactividad) ──────────
+
+function persistSession(kind, name) {
+  try { localStorage.setItem('prode_session', JSON.stringify({ token: TOKEN, kind, name: name || null })); } catch (_) {}
+}
+function clearSession() {
+  try { localStorage.removeItem('prode_session'); } catch (_) {}
+}
+
+// Reinicia el contador de inactividad; a los 10 min sin actividad cierra sesión.
+function resetIdle() {
+  if (idleTimer) clearTimeout(idleTimer);
+  if (!TOKEN) return;
+  idleTimer = setTimeout(() => doOut(true), 10 * 60 * 1000);
+}
+function startIdle() {
+  ['click', 'keydown', 'touchstart', 'scroll'].forEach(ev =>
+    document.addEventListener(ev, resetIdle, { passive: true }));
+  resetIdle();
+}
+
+// Al abrir la página, intenta reanudar la sesión si el token sigue vivo.
+async function resumeSession() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem('prode_session') || 'null'); } catch (_) { saved = null; }
+  if (!saved || !saved.token) return;
+  let rows;
+  try { rows = await rpc('prode_resume', { p_token: saved.token }); } catch (_) { rows = null; }
+  const s = rows && rows[0];
+  if (!s) { clearSession(); return; }
+  TOKEN = saved.token;
+  if (s.kind === 'admin') { IA = true; await loadCache(); renderAdm(); go('adm'); }
+  else { CU = s.name; IA = false; await loadCache(); renderUsr(); go('usr'); }
+  startIdle();
+}
+resumeSession();
 
 // ── CACHE ────────────────────────────────────────────────────────────────────
 
@@ -612,9 +658,9 @@ function renderProns(elId, mode) {
         </div>
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${(isA ? false : lockUser) ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)${isA ? '' : `;draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
-          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)" ${(isA ? false : lockUser) ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)${isA ? '' : `;draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
         </div>
       </div>`;
@@ -624,22 +670,28 @@ function renderProns(elId, mode) {
   document.getElementById(elId).innerHTML = html;
 }
 
+// Guarda en memoria lo que el jugador va tipeando (para no perderlo al cambiar de jornada)
+function draftG(id) {
+  const h = document.getElementById('mu' + id + 'h');
+  const a = document.getElementById('mu' + id + 'a');
+  if (h && a) cache.prons[id] = { h: h.value, a: a.value };
+}
+
 async function savePron() {
   const btn = event.target;
   btn.disabled = true;
   btn.textContent = 'Guardando...';
+  // Guardamos TODO lo cargado (todas las jornadas), leyendo del borrador en memoria
   const toSave = [];
   MATCHES.forEach(m => {
     if (groupMatchStarted(m)) return; // no guardar partidos que ya arrancaron
-    const h = document.getElementById('mu' + m.id + 'h');
-    const a = document.getElementById('mu' + m.id + 'a');
-    if (h && a && h.value !== '' && a.value !== '') {
-      toSave.push({ player_name: CU, match_id: m.id, home_goals: parseInt(h.value), away_goals: parseInt(a.value) });
-      cache.prons[m.id] = { h: parseInt(h.value), a: parseInt(a.value) };
+    const d = cache.prons[m.id];
+    if (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) {
+      toSave.push({ match_id: m.id, home_goals: parseInt(d.h), away_goals: parseInt(d.a) });
     }
   });
   if (toSave.length) {
-    try { await rpc('prode_save_predictions', { p_name: CU, p_pass: CUPASS, p_rows: toSave }); }
+    try { await rpc('prode_save_predictions', { p_token: TOKEN, p_rows: toSave }); }
     catch (err) {
       btn.disabled = false; btn.innerHTML = '💾 Guardar pronósticos';
       document.getElementById('pmsg').style.color = 'var(--red)';
@@ -669,7 +721,7 @@ async function saveRes() {
     }
   });
   if (toSave.length) {
-    try { await rpc('prode_admin_save_results', { p_pass: ADMINPASS, p_rows: toSave }); }
+    try { await rpc('prode_admin_save_results', { p_token: TOKEN, p_rows: toSave }); }
     catch (err) {
       btn.disabled = false; btn.innerHTML = '✓ Guardar resultados';
       const m = document.getElementById('rmsg');
@@ -830,7 +882,7 @@ async function snapshotRanks() {
   });
   const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
   const rows = sorted.map(([name], i) => ({ name, prev_rank: i + 1 }));
-  try { await rpc('prode_admin_snapshot_ranks', { p_pass: ADMINPASS, p_rows: rows }); }
+  try { await rpc('prode_admin_snapshot_ranks', { p_token: TOKEN, p_rows: rows }); }
   catch (err) {
     const m = document.getElementById('snapmsg');
     if (m) { m.style.color = 'var(--red)'; m.textContent = 'Error: ' + err.message; }
@@ -1068,9 +1120,9 @@ function renderBracketMatch(m, modo) {
     return `<div class="bk-match">
       <div class="bk-match-info">${m.date} · ${m.time} ARG · ${m.sede}${lockIcon} ${badge}</div>
       <div class="bk-team ${homeCls}">${flagImg(homeTeam)}<span class="${homeNmCls}">${homeLbl}</span>
-        ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
+        ${r ? `<span class="sc">${fmtScore(r.home_goals,r.home_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}h" value="${myP?.h??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`}</div>
       <div class="bk-team ${awayCls}">${flagImg(awayTeam)}<span class="${awayNmCls}">${awayLbl}</span>
-        ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2)">`}</div>
+        ${r ? `<span class="sc">${fmtScore(r.away_goals,r.away_pens)}</span>` : `<input type="number" min="0" max="99" class="bk-in" id="bp${m.id}a" value="${myP?.a??''}" ${(!teamsKnown||started)?'disabled':''} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`}</div>
       ${myP && !r ? `<div class="bk-mypred">Mi predicción: ${myP.h}-${myP.a}</div>` : ''}
     </div>`;
   }
@@ -1112,7 +1164,7 @@ async function confirmGroups() {
   if (!allGroupsComplete()) return;
   const auto = computeAutoSlots();
   const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
-  try { await rpc('prode_admin_save_bracket_slots', { p_pass: ADMINPASS, p_rows: rows, p_confirmed: true }); }
+  try { await rpc('prode_admin_save_bracket_slots', { p_token: TOKEN, p_rows: rows, p_confirmed: true }); }
   catch (err) { alert('No se pudo confirmar: ' + err.message); return; }
   cache.bracketSlots = auto;
   cache.bracketConfirmed = true;
@@ -1122,7 +1174,7 @@ async function confirmGroups() {
 async function reopenGroups() {
   const auto = computeAutoSlots();
   const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
-  try { await rpc('prode_admin_save_bracket_slots', { p_pass: ADMINPASS, p_rows: rows, p_confirmed: null }); }
+  try { await rpc('prode_admin_save_bracket_slots', { p_token: TOKEN, p_rows: rows, p_confirmed: null }); }
   catch (err) { alert('No se pudo guardar: ' + err.message); return; }
   cache.bracketSlots = auto;
   renderProns('pa', 'a');
@@ -1159,7 +1211,7 @@ async function saveBracketResults() {
     cache.bracketResults[m.id] = row;
   });
   if (toSave.length) {
-    try { await rpc('prode_admin_save_bracket_results', { p_pass: ADMINPASS, p_rows: toSave }); }
+    try { await rpc('prode_admin_save_bracket_results', { p_token: TOKEN, p_rows: toSave }); }
     catch (err) {
       btn.disabled = false; btn.innerHTML = '✓ Guardar resultados';
       const m = document.getElementById('bmsg');
@@ -1173,21 +1225,26 @@ async function saveBracketResults() {
   if (msg) { msg.textContent = '✓ Resultados guardados'; setTimeout(() => msg.textContent = '', 2500); }
 }
 
+// Guarda en memoria lo que el jugador tipea en el bracket (no perder al cambiar de vista)
+function draftB(id) {
+  const h = document.getElementById('bp' + id + 'h');
+  const a = document.getElementById('bp' + id + 'a');
+  if (h && a) cache.bracketProns[id] = { h: h.value, a: a.value };
+}
+
 // Jugador guarda sus predicciones del bracket
 async function saveBracketProns() {
   const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando...';
   const toSave = [];
   ALL_BRACKET_MATCHES.forEach(m => {
     if (matchStarted(m.id)) return; // no guardar los bloqueados
-    const h = document.getElementById('bp'+m.id+'h');
-    const a = document.getElementById('bp'+m.id+'a');
-    if (h && a && h.value !== '' && a.value !== '') {
-      toSave.push({ player_name: CU, match_id: m.id, home_goals: parseInt(h.value), away_goals: parseInt(a.value) });
-      cache.bracketProns[m.id] = { h: parseInt(h.value), a: parseInt(a.value) };
+    const d = cache.bracketProns[m.id];
+    if (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) {
+      toSave.push({ match_id: m.id, home_goals: parseInt(d.h), away_goals: parseInt(d.a) });
     }
   });
   if (toSave.length) {
-    try { await rpc('prode_save_bracket_predictions', { p_name: CU, p_pass: CUPASS, p_rows: toSave }); }
+    try { await rpc('prode_save_bracket_predictions', { p_token: TOKEN, p_rows: toSave }); }
     catch (err) {
       btn.disabled = false; btn.innerHTML = '💾 Guardar mis predicciones';
       const m = document.getElementById('bpmsg');
@@ -1207,12 +1264,12 @@ async function saveCfg() {
   const ap = document.getElementById('cfa').value;     // NUEVA contraseña admin (vacío = no cambiar)
   const msg = document.getElementById('cfmsg');
   try {
-    await rpc('prode_admin_save_config', { p_pass: ADMINPASS, p_new_player_pass: pp, p_new_admin_pass: ap });
+    await rpc('prode_admin_save_config', { p_token: TOKEN, p_new_player_pass: pp, p_new_admin_pass: ap });
   } catch (err) {
     msg.style.color = 'var(--red)'; msg.textContent = 'Error: ' + err.message; return;
   }
-  // Si se cambió la contraseña de admin, actualizar la de la sesión actual
-  if (ap && ap !== '') { ADMINPASS = ap; document.getElementById('cfa').value = ''; }
+  // Si se cambió la contraseña de admin, limpiamos el campo (la sesión actual sigue válida por token)
+  if (ap && ap !== '') { document.getElementById('cfa').value = ''; }
   msg.style.color = 'var(--green)';
   msg.textContent = '✓ Guardado';
   setTimeout(() => msg.textContent = '', 2500);
@@ -1289,7 +1346,7 @@ async function createPlayer() {
   let photoUrl = null;
   try {
     if (fileInput.files && fileInput.files[0]) photoUrl = await uploadAvatar(fileInput.files[0], name);
-    await rpc('prode_admin_create_player', { p_pass: ADMINPASS, p_name: name, p_player_pass: pass, p_photo_url: photoUrl });
+    await rpc('prode_admin_create_player', { p_token: TOKEN, p_name: name, p_player_pass: pass, p_photo_url: photoUrl });
     await loadCache();
     renderPart();
   } catch (err) {
@@ -1306,7 +1363,7 @@ function changePhoto(name) {
     if (!inp.files || !inp.files[0]) return;
     try {
       const url = await uploadAvatar(inp.files[0], name);
-      await rpc('prode_admin_change_player_photo', { p_pass: ADMINPASS, p_name: name, p_photo_url: url });
+      await rpc('prode_admin_change_player_photo', { p_token: TOKEN, p_name: name, p_photo_url: url });
       await loadCache();
       renderPart();
     } catch (e) { alert('No se pudo subir la foto. Probá de nuevo.'); }
@@ -1318,7 +1375,7 @@ async function changePass(name) {
   const np = prompt('Nueva contraseña para ' + name + ':');
   if (np === null || np === '') return;
   try {
-    await rpc('prode_admin_change_player_pass', { p_pass: ADMINPASS, p_name: name, p_new_pass: np });
+    await rpc('prode_admin_change_player_pass', { p_token: TOKEN, p_name: name, p_new_pass: np });
     alert('Contraseña actualizada para ' + name);
   } catch (err) { alert('No se pudo actualizar: ' + err.message); }
 }
