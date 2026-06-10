@@ -256,6 +256,9 @@
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 4.5s linear infinite}
   .winner-name{font-size:26px;font-weight:800;color:#fff;margin-top:1rem}
   .winner-pts{font-size:13px;color:var(--text2);margin-top:4px}
+  /* Escalón del podio iluminado cuando es el jugador actual */
+  @keyframes podioGlow{0%,100%{box-shadow:0 0 9px var(--glow),0 0 2px var(--glow)}50%{box-shadow:0 0 22px var(--glow),0 0 9px var(--glow)}}
+  .podio-step.lit{animation:podioGlow 1.8s ease-in-out infinite}
 </style>
 </head>
 <body>

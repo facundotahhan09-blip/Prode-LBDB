@@ -940,13 +940,14 @@ function paintTbl(id) {
       const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : '🥉';
       const stepCls = pos === 0 ? 'step-1' : pos === 1 ? 'step-2' : 'step-3';
       const ringCls = pos === 0 ? 'ring-gold' : pos === 1 ? 'ring-silver' : 'ring-bronze';
-      const mineStyle = s.name === CU ? 'background:rgba(59,130,246,.14);outline:1px solid rgba(59,130,246,.4);border-radius:12px;padding:6px 4px 0' : '';
-      html += `<div class="podio-spot" style="${mineStyle}">
+      const mine = s.name === CU;
+      const glow = ['#f5c542', '#c4ccd8', '#cd7f32'][pos] || '#f5c542';
+      html += `<div class="podio-spot">
         <div class="podio-medal">${medal}</div>
         ${avatarHtml(s.name, pos === 0 ? 64 : 54, 'podio-av ' + ringCls)}
         <div class="podio-name">${s.name}</div>
         <div class="podio-pts">${s.tot} pts</div>
-        <div class="podio-step ${stepCls}">${pos + 1}</div>
+        <div class="podio-step ${stepCls}${mine ? ' lit' : ''}" style="${mine ? `--glow:${glow}` : ''}">${pos + 1}</div>
       </div>`;
     });
     html += `</div>`;
