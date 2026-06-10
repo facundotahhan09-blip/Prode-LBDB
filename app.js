@@ -1106,8 +1106,7 @@ function partCardGroup(m) {
     </div>
     <div class="match-body">
       <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-      <div style="text-align:center;font-weight:700">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
-      <div></div><div></div>
+      <div style="grid-column:2/5;text-align:center;font-weight:700">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
       <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
     </div>
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>
@@ -1138,8 +1137,7 @@ function partCardBracket(m) {
     </div>
     <div class="match-body">
       <div class="team-l"><span class="team-name">${homeLbl}</span><span class="flag">${flCell(homeTeam)}</span></div>
-      <div style="text-align:center;font-weight:700"><span class="result-score">${scoreTxt}</span></div>
-      <div></div><div></div>
+      <div style="grid-column:2/5;text-align:center;font-weight:700"><span class="result-score">${scoreTxt}</span></div>
       <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
     </div>
     ${myLine ? `<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>` : ''}
