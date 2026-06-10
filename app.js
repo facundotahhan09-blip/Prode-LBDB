@@ -1044,51 +1044,106 @@ async function autoSnapshot() {
 
 // ── MIS RESULTADOS ───────────────────────────────────────────────────────────
 
-function renderMyRes() {
-  let html = '';
-  JORNADAS.forEach(j => {
-    const ms = MATCHES.filter(m => m.j === j.num);
-    const byDate = {};
-    ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+let selPart = 1;          // sección: 1/2/3 (jornadas) o 'elim'
+let selPartR = 'r32';     // ronda dentro de eliminatorias
 
-    html += `<div style="margin-bottom:1.5rem">
-      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-        ${j.label} <span style="font-size:12px;font-weight:400;color:var(--text2)">${j.dates}</span>
-      </div>`;
-    Object.entries(byDate).forEach(([date, matches]) => {
-      html += `<div style="margin-bottom:1rem">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-weight:500">${date}</div>`;
-      matches.forEach(m => {
-        const r = cache.results[m.id];
-        const p = cache.prons[m.id];
-        const hasR = !!r;
-        const pp = p ? pts(m.id, p.h, p.a) : (hasR ? 0 : null);
-        let badge = '';
-        if (pp === 3) badge = '<span class="badge bex">+3</span>';
-        else if (pp === 1) badge = '<span class="badge bwi">+1</span>';
-        else if (pp === 0 && hasR) badge = '<span class="badge bno">0</span>';
-        const my = p ? `${p.h}-${p.a}` : '<span style="color:var(--text3)">—</span>';
-        const color = GRP_COLORS[m.g];
-        html += `<div class="match-card">
-          <div class="match-meta">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:${color};font-size:11px;font-weight:700;color:#fff">${m.g}</span>
-            <span class="match-time">${m.time} ARG</span>
-            <span style="color:var(--text3);font-size:11px">Mi pronóstico: ${my}</span>
-            ${badge}
-          </div>
-          <div class="match-body">
-            <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-            <div style="text-align:center">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
-            <div></div><div></div>
-            <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
-          </div>
-        </div>`;
-      });
-      html += '</div>';
-    });
-    html += '</div>';
+function setPartSec(j) { selPart = j; renderMyRes(); }
+function setPartRound(key) { selPartR = key; renderMyRes(); }
+
+function renderMyRes() {
+  // Selector de secciones (jornadas + eliminatoria)
+  let html = `<div class="grp-tabs" style="margin-bottom:1rem">`;
+  JORNADAS.forEach(j => {
+    html += `<button class="gbt${selPart === j.num ? ' on' : ''}" onclick="setPartSec(${j.num})">${j.label}</button>`;
   });
+  html += `<button class="gbt${selPart === 'elim' ? ' on' : ''}" onclick="setPartSec('elim')">🏆 Fase Eliminatoria</button></div>`;
+
+  if (selPart === 'elim') {
+    html += `<div class="grp-tabs" style="margin-bottom:1rem">`;
+    BRACKET_ROUNDS.forEach(rd => html += `<button class="gbt${selPartR === rd.key ? ' on' : ''}" onclick="setPartRound('${rd.key}')">${rd.name}</button>`);
+    html += `</div>`;
+    html += partByDate(BRACKET[selPartR] || [], partCardBracket);
+  } else {
+    html += partByDate(MATCHES.filter(m => m.j === selPart), partCardGroup);
+  }
   document.getElementById('rescont').innerHTML = html;
+}
+
+function partByDate(ms, cardFn) {
+  const byDate = {};
+  ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+  let html = '';
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+        <span style="font-size:11px;color:var(--text3)">${matches.length} partido${matches.length > 1 ? 's' : ''}</span>
+      </div>`;
+    matches.forEach(m => html += cardFn(m));
+    html += `</div>`;
+  });
+  return html;
+}
+
+// Tarjeta read-only de un partido de grupos: resultado real + tu pronóstico + puntos
+function partCardGroup(m) {
+  const r = cache.results[m.id];
+  const hasR = !!r;
+  const started = groupMatchStarted(m);
+  const myP = cache.prons[m.id];
+  const p = hasR ? pts(m.id, myP?.h, myP?.a) : null;
+  const chip = statusChip(hasR, started, p);
+  const color = GRP_COLORS[m.g];
+  const myLine = myP ? `Tu pronóstico: ${myP.h}-${myP.a}` : 'Sin pronóstico';
+  return `<div class="match-card">
+    <div class="match-meta">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:${color};font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${m.g}</span>
+      <span class="match-time">${m.time} ARG</span>
+      <span style="color:var(--text3)">·</span>
+      <span class="match-sede">${m.sede}</span>
+      <span style="margin-left:auto">${chip}</span>
+    </div>
+    <div class="match-body">
+      <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
+      <div style="text-align:center;font-weight:700">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : '<span style="color:var(--text3)">-</span>'}</div>
+      <div></div><div></div>
+      <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>
+  </div>`;
+}
+
+// Tarjeta read-only de un partido de eliminatoria
+function partCardBracket(m) {
+  const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
+  const homeLbl = homeTeam || slotLabel(m.home);
+  const awayLbl = awayTeam || slotLabel(m.away);
+  const r = bracketScore(m.id);
+  const hasR = !!r;
+  const started = matchStarted(m.id);
+  const teamsKnown = !!(homeTeam && awayTeam);
+  const myP = cache.bracketProns[m.id];
+  const p = hasR ? scoreBracketPts(m.id, myP?.h, myP?.a) : null;
+  const chip = (!teamsKnown && !hasR) ? '<span class="badge bno">Por definir</span>' : statusChip(hasR, started, p);
+  const flCell = t => t ? fl(t) : '<span style="display:inline-block;width:24px;height:16px;background:#1f2a40;border-radius:2px"></span>';
+  const scoreTxt = hasR ? `${r.home_goals}-${r.away_goals}${(r.home_pens != null) ? ` <span style="font-size:10px;color:var(--text3)">(${r.home_pens}-${r.away_pens} p)</span>` : ''}` : '<span style="color:var(--text3)">-</span>';
+  const myLine = myP ? `Tu pronóstico: ${myP.h}-${myP.a}` : (teamsKnown ? 'Sin pronóstico' : '');
+  return `<div class="match-card">
+    <div class="match-meta">
+      <span class="match-time">${m.time} ARG</span>
+      <span style="color:var(--text3)">·</span>
+      <span class="match-sede">${m.sede}</span>
+      <span style="margin-left:auto">${chip}</span>
+    </div>
+    <div class="match-body">
+      <div class="team-l"><span class="team-name">${homeLbl}</span><span class="flag">${flCell(homeTeam)}</span></div>
+      <div style="text-align:center;font-weight:700"><span class="result-score">${scoreTxt}</span></div>
+      <div></div><div></div>
+      <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
+    </div>
+    ${myLine ? `<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>` : ''}
+  </div>`;
 }
 
 // ── BRACKET (FASE ELIMINATORIA) ────────────────────────────────────────────────
