@@ -635,6 +635,7 @@ const JORNADAS = [
 
 let selJ = { u: 1, a: 1 };
 let selR = { u: 'r32', a: 'r32' };  // ronda elegida dentro de Fase Eliminatoria
+let adminResDraft = {};             // borrador en memoria de resultados del admin {matchId:{h,a}}
 
 // Indicador de estado unificado para CUALQUIER partido (grupos o eliminatorias):
 // jugado (con puntos) · cerrado (arrancó) · abierto (se puede cargar).
@@ -692,8 +693,9 @@ function renderProns(elId, mode) {
       </div>`;
     matches.forEach(m => {
       const r = cache.results[m.id];
-      const ph = isA ? (r ? r.home_goals : '') : (cache.prons[m.id]?.h ?? '');
-      const pa = isA ? (r ? r.away_goals : '') : (cache.prons[m.id]?.a ?? '');
+      const d = isA ? adminResDraft[m.id] : null;
+      const ph = isA ? (d ? d.h : (r ? r.home_goals : '')) : (cache.prons[m.id]?.h ?? '');
+      const pa = isA ? (d ? d.a : (r ? r.away_goals : '')) : (cache.prons[m.id]?.a ?? '');
       const hasR = !!r;
       const started = groupMatchStarted(m); // ¿ya arrancó?
       // El jugador no puede editar si hay resultado o si el partido arrancó
@@ -710,9 +712,9 @@ function renderProns(elId, mode) {
         </div>
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
-          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)${isA ? '' : `;draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);${isA ? `draftRes('${m.id}')` : `draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
-          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2)${isA ? '' : `;draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
+          <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);${isA ? `draftRes('${m.id}')` : `draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
         </div>
       </div>`;
@@ -721,6 +723,12 @@ function renderProns(elId, mode) {
   });
   if (!isA) html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Puntos: 3 exacto · 1 ganador · 0 nada. Podés modificar hasta que arranca el partido.</div>
     <button class="btn btn-primary btn-full" onclick="savePron()" style="margin-top:6px">💾 Guardar pronósticos</button><div class="ok" id="pmsg"></div>`;
+  else {
+    const total = ms.length;
+    const loaded = ms.filter(m => { const d = adminResDraft[m.id]; const r = cache.results[m.id]; return (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) || r; }).length;
+    html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Cargaste <strong id="resCounter" style="color:var(--text)">${loaded}</strong> de ${total} partidos de esta jornada.</div>
+      <button class="btn btn-primary btn-full" onclick="saveRes()" style="margin-top:6px">✓ Guardar resultados</button><div class="ok" id="rmsg"></div>`;
+  }
   document.getElementById(elId).innerHTML = html;
 }
 
@@ -798,6 +806,23 @@ function draftG(id) {
   if (h && a) cache.prons[id] = { h: h.value, a: a.value };
 }
 
+// Borrador de resultados del admin: persiste lo tipeado al cambiar de jornada
+function draftRes(id) {
+  const h = document.getElementById('ma' + id + 'h');
+  const a = document.getElementById('ma' + id + 'a');
+  if (h && a) adminResDraft[id] = { h: h.value, a: a.value };
+  updateResCounter();
+}
+function updateResCounter() {
+  const el = document.getElementById('resCounter');
+  if (!el || selJ.a === 'elim') return;
+  const ms = MATCHES.filter(m => m.j === selJ.a);
+  el.textContent = ms.filter(m => {
+    const d = adminResDraft[m.id], r = cache.results[m.id];
+    return (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) || r;
+  }).length;
+}
+
 async function savePron() {
   const btn = event.target;
   btn.disabled = true;
@@ -835,11 +860,11 @@ async function saveRes() {
   await autoSnapshot(); // foto de posiciones previas (para las flechas ▲▼)
   const toSave = [];
   MATCHES.forEach(m => {
-    const h = document.getElementById('ma' + m.id + 'h');
-    const a = document.getElementById('ma' + m.id + 'a');
-    if (h && a && h.value !== '' && a.value !== '') {
-      toSave.push({ match_id: m.id, home_goals: parseInt(h.value), away_goals: parseInt(a.value) });
-      cache.results[m.id] = { home_goals: parseInt(h.value), away_goals: parseInt(a.value) };
+    const d = adminResDraft[m.id];
+    if (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) {
+      const hg = parseInt(d.h), ag = parseInt(d.a);
+      toSave.push({ match_id: m.id, home_goals: hg, away_goals: ag });
+      cache.results[m.id] = { home_goals: hg, away_goals: ag };
     }
   });
   if (toSave.length) {
@@ -856,7 +881,7 @@ async function saveRes() {
   renderTbl('atblcont');
   const msg = document.getElementById('rmsg');
   msg.style.color = 'var(--green)';
-  msg.textContent = '✓ Resultados guardados';
+  msg.textContent = toSave.length ? `✓ ${toSave.length} resultado${toSave.length > 1 ? 's' : ''} guardado${toSave.length > 1 ? 's' : ''}` : 'No hay resultados nuevos para guardar';
   setTimeout(() => msg.textContent = '', 3000);
 }
 
