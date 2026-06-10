@@ -300,6 +300,7 @@ function st(id, btn) {
 
 // Sub-selector de la pestaña Posiciones: Fase de grupos / Eliminatorias
 let selPos = { u: 'grupos', a: 'grupos' };
+let selGrpView = { u: 'tabla', a: 'tabla' };   // dentro de Fase de grupos: tabla completa / mejores terceros
 function renderPosiciones(mode) {
   const selId = mode === 'u' ? 'possu' : 'possa';
   const contId = mode === 'u' ? 'poscont-u' : 'poscont-a';
@@ -312,8 +313,52 @@ function renderPosiciones(mode) {
     b.onclick = () => { selPos[mode] = k; renderPosiciones(mode); };
     sel.appendChild(b);
   });
-  if (selPos[mode] === 'grupos') renderGrpStandings(contId);
+  if (selPos[mode] === 'grupos') renderGrupos(mode, contId);
   else renderElim(contId, false);
+}
+
+// Fase de grupos con toggle: Tabla completa / Mejores terceros
+function setGrpView(mode, k) {
+  selGrpView[mode] = k;
+  renderGrupos(mode, mode === 'u' ? 'poscont-u' : 'poscont-a');
+}
+function renderGrupos(mode, contId) {
+  let html = `<div class="grp-tabs" style="margin-bottom:1rem;justify-content:center">`;
+  [['tabla','Tabla completa'],['terceros','Mejores terceros']].forEach(([k,label]) => {
+    html += `<button class="gbt${selGrpView[mode] === k ? ' on' : ''}" onclick="setGrpView('${mode}','${k}')">${label}</button>`;
+  });
+  html += `</div><div id="grpbody-${mode}"></div>`;
+  document.getElementById(contId).innerHTML = html;
+  if (selGrpView[mode] === 'tabla') renderGrpStandings('grpbody-' + mode);
+  else renderThirdsTable('grpbody-' + mode);
+}
+
+// Tabla única de los 12 terceros, ordenados por Pts → DG → GF; los 8 primeros clasifican (verde)
+function renderThirdsTable(bodyId) {
+  const QC = '#22c55e';
+  const thirds = Object.keys(GRUPOS).map(g => ({ ...computeGroupTable(g)[2], grp: g }))
+    .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+  let html = `<div style="margin-bottom:.75rem;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
+    <span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:${QC}"></span>
+    Los 8 mejores terceros clasifican a 16avos de final
+  </div>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden">
+  <table class="stbl"><thead><tr>
+    <th style="width:18px"></th><th>Selección</th><th>Gr</th><th>PJ</th><th>DG</th><th>GF</th><th>Pts</th>
+  </tr></thead><tbody>`;
+  thirds.forEach((s, i) => {
+    const q = i < 8;
+    const cut = i === 8 ? 'border-top:2px dashed rgba(245,197,66,.45);' : '';
+    html += `<tr ${q ? 'class="qualify-bar"' : ''} style="${q ? `--grp-color:${QC};` : ''}${cut}">
+      <td style="font-size:11px;color:var(--text3);padding-left:10px">${i + 1}</td>
+      <td><div class="team-cell"><span class="flag">${fl(s.team)}</span><span>${s.team}</span></div></td>
+      <td><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:${GRP_COLORS[s.grp]};font-size:10px;font-weight:700;color:#fff">${s.grp}</span></td>
+      <td>${s.pj}</td><td>${s.dg >= 0 ? '+' + s.dg : s.dg}</td><td>${s.gf}</td>
+      <td class="pts-bold">${s.pts}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById(bodyId).innerHTML = html;
 }
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────
@@ -1169,11 +1214,55 @@ function bracketScore(mid) {
 
 // Render del bracket para el jugador (te=elimu) o admin (ae2=elima)
 // renderElim ahora se usa SOLO para la pestaña "Eliminatorias" = modo REAL (solo lectura)
+// Cuadro horizontal de un solo lado: 16avos → ... → Final → 🏆 Campeón
 function renderElim(id, isA) {
+  const complete = allGroupsComplete();
   let html = `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
-    <div class="bk-sub">Resultados reales · desliza horizontalmente →</div></div>`;
-  html += renderBracketColumns('real');
+    <div class="bk-sub">Resultados reales · deslizá horizontal y vertical para recorrer el cuadro →</div></div>`;
+  if (!complete) {
+    html += `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-6px 0 12px">Se va completando con los equipos reales a medida que terminan los grupos.</div>`;
+  }
+  html += `<div class="hbk-scroll"><div class="hbk">`;
+  BRACKET_ROUNDS.forEach(rd => {
+    html += `<div class="hbk-col"><div class="hbk-h">${rd.name}</div><div class="hbk-ms">`;
+    (BRACKET[rd.key] || []).forEach(m => html += hbkMatch(m));
+    html += `</div></div>`;
+  });
+  const champ = resolveSlot('W-FINAL');
+  html += `<div class="hbk-champ"><div class="hbk-h">Campeón</div>
+    <div class="hbk-cup">🏆</div>
+    <div class="hbk-cc">${champ
+      ? `<span class="flag">${fl(champ)}</span><div class="cn">${champ}</div><div class="cl">Campeón</div>`
+      : `<div class="cn" style="color:var(--text3);font-size:13px">Por definir</div>`}</div></div>`;
+  html += `</div></div>`;
   document.getElementById(id).innerHTML = html;
+}
+
+// Una tarjeta compacta del cuadro horizontal
+function hbkMatch(m) {
+  const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
+  const homeLbl = homeTeam || slotLabel(m.home);
+  const awayLbl = awayTeam || slotLabel(m.away);
+  const r = bracketScore(m.id);
+  const hasR = !!r;
+  const started = matchStarted(m.id);
+  const hw = hasR && r.winner && r.winner === homeTeam;
+  const aw = hasR && r.winner && r.winner === awayTeam;
+  const cls = hasR ? 'done' : (started ? 'live' : '');
+  const tag = hasR ? '<span class="hbk-tag d">Final</span>' : (started ? '<span class="hbk-tag l">En juego</span>' : '');
+  const pen = hasR && r.home_pens != null ? ` <span style="font-size:9px;color:var(--text3)">(${r.home_pens}-${r.away_pens}p)</span>` : '';
+  const hs = hasR ? r.home_goals : '-';
+  const as = hasR ? r.away_goals : '-';
+  const row = (lbl, team, score, win, lose, extra) => {
+    const c = !team ? 'hbk-pend' : (win ? 'hbk-win' : (lose ? 'hbk-lose' : ''));
+    const flg = team ? `<span class="flag">${fl(team)}</span>` : `<span style="display:inline-block;width:20px;height:14px;background:#1f2a40;border-radius:2px"></span>`;
+    return `<div class="hbk-r ${c}">${flg}<span class="hbk-nm">${lbl}</span><span class="hbk-sc">${score}</span></div>`;
+  };
+  return `<div class="hbk-m ${cls}">${tag}
+    ${row(homeLbl, homeTeam, hs, hw, aw)}
+    ${row(awayLbl, awayTeam, as, aw, hw)}
+    ${pen ? `<div style="text-align:center;margin-top:2px">${pen}</div>` : ''}
+  </div>`;
 }
 
 // Render del bracket dentro de un contenedor, según el modo:
