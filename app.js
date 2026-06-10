@@ -940,11 +940,11 @@ function paintTbl(id) {
       const medal = pos === 0 ? '🥇' : pos === 1 ? '🥈' : '🥉';
       const stepCls = pos === 0 ? 'step-1' : pos === 1 ? 'step-2' : 'step-3';
       const ringCls = pos === 0 ? 'ring-gold' : pos === 1 ? 'ring-silver' : 'ring-bronze';
-      const mine = s.name === CU ? '<div style="font-size:10px;color:var(--accent);font-weight:700;margin-top:1px">VOS</div>' : '';
-      html += `<div class="podio-spot">
+      const mineStyle = s.name === CU ? 'background:rgba(59,130,246,.14);outline:1px solid rgba(59,130,246,.4);border-radius:12px;padding:6px 4px 0' : '';
+      html += `<div class="podio-spot" style="${mineStyle}">
         <div class="podio-medal">${medal}</div>
         ${avatarHtml(s.name, pos === 0 ? 64 : 54, 'podio-av ' + ringCls)}
-        <div class="podio-name">${s.name}</div>${mine}
+        <div class="podio-name">${s.name}</div>
         <div class="podio-pts">${s.tot} pts</div>
         <div class="podio-step ${stepCls}">${pos + 1}</div>
       </div>`;
