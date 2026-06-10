@@ -340,20 +340,20 @@ function renderThirdsTable(bodyId) {
     .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
   let html = `<div style="margin-bottom:.75rem;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
     <span style="display:inline-block;width:11px;height:11px;border-radius:2px;background:${QC}"></span>
-    Los 8 mejores terceros clasifican a 16avos de final
+    Los 8 mejores terceros (borde verde) clasifican a 16avos de final
   </div>
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);overflow:hidden">
   <table class="stbl"><thead><tr>
-    <th style="width:18px"></th><th>Selección</th><th>Gr</th><th>PJ</th><th>DG</th><th>GF</th><th>Pts</th>
+    <th style="width:18px"></th><th>Selección</th><th>Gr</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th>
   </tr></thead><tbody>`;
   thirds.forEach((s, i) => {
     const q = i < 8;
-    const cut = i === 8 ? 'border-top:2px dashed rgba(245,197,66,.45);' : '';
-    html += `<tr ${q ? 'class="qualify-bar"' : ''} style="${q ? `--grp-color:${QC};` : ''}${cut}">
+    html += `<tr ${q ? 'class="qualify-bar"' : ''} style="${q ? `--grp-color:${QC};` : ''}">
       <td style="font-size:11px;color:var(--text3);padding-left:10px">${i + 1}</td>
       <td><div class="team-cell"><span class="flag">${fl(s.team)}</span><span>${s.team}</span></div></td>
       <td><span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:${GRP_COLORS[s.grp]};font-size:10px;font-weight:700;color:#fff">${s.grp}</span></td>
-      <td>${s.pj}</td><td>${s.dg >= 0 ? '+' + s.dg : s.dg}</td><td>${s.gf}</td>
+      <td>${s.pj}</td><td>${s.g}</td><td>${s.e}</td><td>${s.p}</td>
+      <td>${s.gf}</td><td>${s.gc}</td><td>${s.dg >= 0 ? '+' + s.dg : s.dg}</td>
       <td class="pts-bold">${s.pts}</td>
     </tr>`;
   });
