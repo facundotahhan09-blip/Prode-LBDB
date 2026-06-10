@@ -589,6 +589,19 @@ const JORNADAS = [
 ];
 
 let selJ = { u: 1, a: 1 };
+let selR = { u: 'r32', a: 'r32' };  // ronda elegida dentro de Fase Eliminatoria
+
+// Indicador de estado unificado para CUALQUIER partido (grupos o eliminatorias):
+// jugado (con puntos) · cerrado (arrancó) · abierto (se puede cargar).
+function statusChip(hasR, started, ptsVal) {
+  if (hasR) {
+    if (ptsVal === 3) return '<span class="badge bex">✓ +3 pts</span>';
+    if (ptsVal === 1) return '<span class="badge bwi">+1 pt</span>';
+    return '<span class="badge bno">+0 pts</span>';
+  }
+  if (started) return '<span class="badge bno">🔒 Cerrado</span>';
+  return '<span class="badge" style="background:rgba(59,130,246,.12);color:var(--accent);border:1px solid rgba(59,130,246,.3)">Abierto</span>';
+}
 
 function buildGT(elId, mode) {
   const el = document.getElementById(elId);
@@ -610,7 +623,8 @@ function buildGT(elId, mode) {
 function renderProns(elId, mode) {
   const isA = mode === 'a';
   if (selJ[mode] === 'elim') {
-    renderBracketInto(elId, isA, mode === 'u' ? 'pred' : 'adminres');
+    if (isA) { renderBracketInto(elId, true, 'adminres'); return; } // admin: árbol (lo vemos en su pantalla)
+    renderBracketPredRounds(elId);                                  // jugador: ronda por ronda
     return;
   }
   const jNum = selJ[mode];
@@ -640,12 +654,6 @@ function renderProns(elId, mode) {
       // El jugador no puede editar si hay resultado o si el partido arrancó
       const lockUser = !isA && (hasR || started);
       const p = hasR && !isA ? pts(m.id, cache.prons[m.id]?.h, cache.prons[m.id]?.a) : null;
-      let badge = '';
-      if (p === 3) badge = '<span class="badge bex">+3 pts</span>';
-      else if (p === 1) badge = '<span class="badge bwi">+1 pt</span>';
-      else if (p === 0 && hasR) badge = '<span class="badge bno">0 pts</span>';
-      // candado si arrancó y todavía no hay resultado cargado (para el jugador)
-      const lockIcon = (!isA && started && !hasR) ? '<span title="Pronóstico cerrado" style="margin-left:4px">🔒</span>' : '';
       const color = GRP_COLORS[m.g];
       html += `<div class="match-card">
         <div class="match-meta">
@@ -653,8 +661,7 @@ function renderProns(elId, mode) {
           <span class="match-time">${m.time} ARG</span>
           <span style="color:var(--text3)">·</span>
           <span class="match-sede">${m.sede}</span>
-          ${lockIcon}
-          ${badge}
+          ${isA ? '' : `<span style="margin-left:auto">${statusChip(hasR, started, p)}</span>`}
         </div>
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
@@ -668,6 +675,73 @@ function renderProns(elId, mode) {
     html += '</div>';
   });
   document.getElementById(elId).innerHTML = html;
+}
+
+// ── BRACKET DEL JUGADOR: RONDA POR RONDA (dentro de "Fase Eliminatoria") ────────
+function setBracketRound(key) { selR.u = key; renderProns('pu', 'u'); }
+
+function renderBracketPredRounds(elId) {
+  let html = `<div class="grp-tabs" style="margin-bottom:1rem">`;
+  BRACKET_ROUNDS.forEach(rd => {
+    html += `<button class="gbt${selR.u === rd.key ? ' on' : ''}" onclick="setBracketRound('${rd.key}')">${rd.name}</button>`;
+  });
+  html += `</div>`;
+
+  const ms = BRACKET[selR.u] || [];
+  const byDate = {};
+  ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+        <span style="font-size:11px;color:var(--text3)">${matches.length} partido${matches.length > 1 ? 's' : ''}</span>
+      </div>`;
+    matches.forEach(m => html += bracketCardPred(m));
+    html += `</div>`;
+  });
+
+  html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Puntos: 3 exacto · 1 ganador · 0 nada. Podés modificar hasta que arranca el partido.</div>
+    <button class="btn btn-primary btn-full" onclick="saveBracketProns()">💾 Guardar mis predicciones</button><div class="ok" id="bpmsg"></div>`;
+  document.getElementById(elId).innerHTML = html;
+}
+
+// Tarjeta de un partido de eliminatoria en modo predicción (mismo estilo que grupos)
+function bracketCardPred(m) {
+  const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
+  const homeLbl = homeTeam || slotLabel(m.home);
+  const awayLbl = awayTeam || slotLabel(m.away);
+  const r = bracketScore(m.id);
+  const hasR = !!r;
+  const started = matchStarted(m.id);
+  const teamsKnown = !!(homeTeam && awayTeam);
+  const myP = cache.bracketProns[m.id];
+  const p = hasR ? scoreBracketPts(m.id, myP?.h, myP?.a) : null;
+  const editable = teamsKnown && !started && !hasR;
+  const ph = myP?.h ?? '';
+  const pa = myP?.a ?? '';
+  const chip = (!teamsKnown && !hasR) ? '<span class="badge bno">Por definir</span>' : statusChip(hasR, started, p);
+  const flCell = t => t ? fl(t) : '<span style="display:inline-block;width:24px;height:16px;background:#1f2a40;border-radius:2px"></span>';
+  const mid = hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs';
+  const inH = `<input type="number" min="0" max="99" value="${ph}" id="bp${m.id}h" ${editable ? '' : 'disabled'} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`;
+  const inA = `<input type="number" min="0" max="99" value="${pa}" id="bp${m.id}a" ${editable ? '' : 'disabled'} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`;
+  return `<div class="match-card">
+    <div class="match-meta">
+      <span class="match-time">${m.time} ARG</span>
+      <span style="color:var(--text3)">·</span>
+      <span class="match-sede">${m.sede}</span>
+      <span style="margin-left:auto">${chip}</span>
+    </div>
+    <div class="match-body">
+      <div class="team-l"><span class="team-name">${homeLbl}</span><span class="flag">${flCell(homeTeam)}</span></div>
+      ${inH}
+      <div class="vs">${mid}</div>
+      ${inA}
+      <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
+    </div>
+    ${(hasR && myP) ? `<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">Tu pronóstico: ${myP.h}-${myP.a}</div>` : ''}
+  </div>`;
 }
 
 // Guarda en memoria lo que el jugador va tipeando (para no perderlo al cambiar de jornada)
