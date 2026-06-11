@@ -286,6 +286,14 @@
   /* Escalón del podio iluminado cuando es el jugador actual */
   @keyframes podioGlow{0%,100%{box-shadow:0 0 9px var(--glow),0 0 2px var(--glow)}50%{box-shadow:0 0 22px var(--glow),0 0 9px var(--glow)}}
   .podio-step.lit{animation:podioGlow 1.8s ease-in-out infinite}
+  /* Modal de importación de resultados */
+  .imp-overlay{display:none;position:fixed;inset:0;background:rgba(5,8,16,.8);z-index:1000;align-items:center;justify-content:center;padding:18px}
+  .imp-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;max-width:480px;width:100%;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .imp-modal h3{font-size:15px;font-weight:700;margin-bottom:6px}
+  .imp-modal p{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5}
+  .imp-modal textarea{width:100%;min-height:150px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px;resize:vertical;box-sizing:border-box}
+  .imp-actions{display:flex;gap:8px;margin-top:12px}
+  .imp-msg{font-size:12px;margin-top:10px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -412,7 +420,7 @@
       <button class="tab" onclick="st('ac',this)">Config</button>
       <button class="tab" onclick="st('apa',this)">Jugadores</button>
     </div>
-    <div id="ar" class="tc on"><div class="grp-tabs" id="gsa"></div><div id="pa"></div></div>
+    <div id="ar" class="tc on"><button class="btn btn-sm" onclick="openImport()" style="margin-bottom:10px">📥 Importar resultados</button><div class="grp-tabs" id="gsa"></div><div id="pa"></div></div>
     <div id="ae2" class="tc">
       <div class="grp-tabs" id="possa"></div>
       <div id="poscont-a"></div>
@@ -433,5 +441,17 @@
 
 </div>
 <script src="app.js"></script>
+  <div class="imp-overlay" id="impOverlay">
+    <div class="imp-modal">
+      <h3>📥 Importar resultados</h3>
+      <p>Pegá el bloque que te paso (formato JSON). Se van a <strong>precargar</strong> los marcadores en los casilleros; después revisás en pantalla y tocás <strong>Guardar</strong> para confirmar. No se guarda nada hasta que vos lo confirmes.</p>
+      <textarea id="impText" placeholder='{ "grupos": { "1": "2-1", "2": "0-0" }, "bracket": { "R32-1": "1-0", "R32-3": "1-1 (4-2)" } }'></textarea>
+      <div class="imp-actions">
+        <button class="btn btn-primary" onclick="applyImport()">Precargar</button>
+        <button class="btn btn-sm" onclick="closeImport()">Cerrar</button>
+      </div>
+      <div class="imp-msg" id="impMsg"></div>
+    </div>
+  </div>
 </body>
 </html>

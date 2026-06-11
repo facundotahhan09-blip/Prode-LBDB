@@ -955,6 +955,54 @@ async function savePron() {
   setTimeout(() => msg.textContent = '', 3000);
 }
 
+// ── IMPORTAR RESULTADOS (precarga; el admin revisa y guarda) ───────────────────
+function openImport() {
+  document.getElementById('impOverlay').style.display = 'flex';
+  document.getElementById('impText').value = '';
+  document.getElementById('impMsg').innerHTML = '';
+}
+function closeImport() { document.getElementById('impOverlay').style.display = 'none'; }
+
+function applyImport() {
+  const msg = document.getElementById('impMsg');
+  let raw = document.getElementById('impText').value.trim();
+  raw = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim(); // tolera bloques con ```
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) {
+    msg.innerHTML = `<span style="color:var(--red)">No pude leer el texto. Pegá el bloque completo en formato JSON (el que te paso por chat).</span>`;
+    return;
+  }
+  const scoreRe = /^\s*(\d+)\s*-\s*(\d+)\s*(?:\(\s*(\d+)\s*-\s*(\d+)\s*p?\s*\))?\s*$/i;
+  let okG = 0, okB = 0; const bad = [];
+
+  const grupos = data.grupos || data.groups || {};
+  Object.entries(grupos).forEach(([k, v]) => {
+    const id = parseInt(k);
+    const m = MATCHES.find(x => x.id === id);
+    const mm = String(v).match(scoreRe);
+    if (!m || !mm) { bad.push(`grupos[${k}]`); return; }
+    adminResDraft[id] = { h: mm[1], a: mm[2] };
+    okG++;
+  });
+
+  const bracket = data.bracket || data.elim || data.eliminatorias || {};
+  Object.entries(bracket).forEach(([k, v]) => {
+    const m = ALL_BRACKET_MATCHES.find(x => x.id === k);
+    const mm = String(v).match(scoreRe);
+    if (!m || !mm) { bad.push(`bracket[${k}]`); return; }
+    adminBkDraft[k] = { h: mm[1], a: mm[2], ph: mm[3] ?? '', pa: mm[4] ?? '' };
+    okB++;
+  });
+
+  renderProns('pa', 'a'); // refresca la vista actual con lo precargado
+
+  let s = `<span style="color:var(--green)">✓ Precargado: ${okG} de grupos${okB ? `, ${okB} de eliminatoria` : ''}.</span>`;
+  if (bad.length) s += `<br><span style="color:var(--yellow)">No pude ubicar ${bad.length}: ${bad.slice(0, 8).join(', ')}${bad.length > 8 ? '…' : ''}</span>`;
+  s += `<br><span style="color:var(--text2);font-size:11px">Cerrá, revisá los partidos en pantalla y tocá <strong>Guardar</strong> para confirmar.</span>`;
+  msg.innerHTML = s;
+}
+
 async function saveRes() {
   const btn = event.target;
   btn.disabled = true;
