@@ -803,7 +803,7 @@ function renderBracketAdminRounds(elId) {
     html += `</div>`;
   });
 
-  html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Cargá el marcador de los 90'. Si un cruce queda empatado, aparece el casillero de penales para definir quién avanza (no suma puntos).</div>
+  html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Cargá el marcador de los 90'. Si un cruce queda empatado, elegís quién avanza (y opcional, el resultado de los penales). Eso no suma puntos, solo arma el cuadro.</div>
     <button class="btn btn-primary btn-full" onclick="saveBracketResults()">✓ Guardar resultados del cuadro</button><div class="ok" id="bmsg"></div>`;
   document.getElementById(elId).innerHTML = html;
 }
@@ -821,6 +821,8 @@ function bracketCardAdmin(m) {
   const ph = d ? (d.ph ?? '') : (saved && saved.home_pens != null ? saved.home_pens : '');
   const pa = d ? (d.pa ?? '') : (saved && saved.away_pens != null ? saved.away_pens : '');
   const isDraw = h !== '' && a !== '' && h != null && a != null && parseInt(h) === parseInt(a);
+  let adv = d ? (d.adv ?? '') : '';
+  if (!adv && saved && saved.winner) adv = saved.winner === homeTeam ? 'home' : (saved.winner === awayTeam ? 'away' : '');
   const flCell = t => t ? fl(t) : '<span style="display:inline-block;width:24px;height:16px;background:#1f2a40;border-radius:2px"></span>';
   const dis = teamsKnown ? '' : 'disabled';
   return `<div class="match-card">
@@ -837,31 +839,46 @@ function bracketCardAdmin(m) {
       <input type="number" min="0" max="99" value="${a}" id="br${m.id}a" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
       <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
     </div>
-    <div id="pens-${m.id}" style="${isDraw ? '' : 'display:none;'}margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
-      <div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:6px">⚽ Empate — penales (solo definen quién avanza, no suman puntos)</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
-        <span style="font-size:12px;color:var(--text2);max-width:90px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${homeLbl}</span>
-        <input type="number" min="0" max="99" value="${ph}" id="br${m.id}ph" style="width:46px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
+    <div id="drawblk-${m.id}" style="${isDraw ? '' : 'display:none;'}margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+      <div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:8px">⚽ Empate a los 90' — ¿quién avanza? <span style="color:var(--text3)">(no suma puntos, solo el cuadro)</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap">
+        <button id="adv-${m.id}-home" class="btn btn-sm${adv === 'home' ? ' btn-primary' : ''}" ${dis} onclick="setBkAdv('${m.id}','home')">${homeLbl}</button>
+        <button id="adv-${m.id}-away" class="btn btn-sm${adv === 'away' ? ' btn-primary' : ''}" ${dis} onclick="setBkAdv('${m.id}','away')">${awayLbl}</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px">
+        <span style="font-size:11px;color:var(--text3)">Penales (opcional):</span>
+        <input type="number" min="0" max="99" value="${ph}" id="br${m.id}ph" style="width:42px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
         <span style="color:var(--text3)">-</span>
-        <input type="number" min="0" max="99" value="${pa}" id="br${m.id}pa" style="width:46px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
-        <span style="font-size:12px;color:var(--text2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${awayLbl}</span>
+        <input type="number" min="0" max="99" value="${pa}" id="br${m.id}pa" style="width:42px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
       </div>
     </div>
   </div>`;
 }
 
-// Borrador de resultados del bracket del admin + mostrar/ocultar penales en vivo
+// Borrador de resultados del bracket del admin (preserva el "quién avanza" elegido)
 function draftBkRes(id) {
   const h = document.getElementById('br' + id + 'h');
   const a = document.getElementById('br' + id + 'a');
   const ph = document.getElementById('br' + id + 'ph');
   const pa = document.getElementById('br' + id + 'pa');
-  adminBkDraft[id] = { h: h ? h.value : '', a: a ? a.value : '', ph: ph ? ph.value : '', pa: pa ? pa.value : '' };
-  const pens = document.getElementById('pens-' + id);
-  if (pens && h && a) {
+  const prev = adminBkDraft[id] || {};
+  adminBkDraft[id] = { h: h ? h.value : '', a: a ? a.value : '', ph: ph ? ph.value : '', pa: pa ? pa.value : '', adv: prev.adv || '' };
+  const blk = document.getElementById('drawblk-' + id);
+  if (blk && h && a) {
     const isDraw = h.value !== '' && a.value !== '' && parseInt(h.value) === parseInt(a.value);
-    pens.style.display = isDraw ? '' : 'none';
+    blk.style.display = isDraw ? '' : 'none';
+    if (!isDraw) adminBkDraft[id].adv = ''; // si deja de ser empate, lo define el marcador
   }
+}
+
+// El admin elige qué equipo avanza en un empate
+function setBkAdv(id, side) {
+  draftBkRes(id);                  // sincroniza marcador/penales (preserva adv previo)
+  adminBkDraft[id].adv = side;     // fija el que avanza
+  ['home', 'away'].forEach(s => {
+    const b = document.getElementById('adv-' + id + '-' + s);
+    if (b) b.className = 'btn btn-sm' + (s === side ? ' btn-primary' : '');
+  });
 }
 
 // Tarjeta de un partido de eliminatoria en modo predicción (mismo estilo que grupos)
@@ -989,9 +1006,19 @@ function applyImport() {
   const bracket = data.bracket || data.elim || data.eliminatorias || {};
   Object.entries(bracket).forEach(([k, v]) => {
     const m = ALL_BRACKET_MATCHES.find(x => x.id === k);
-    const mm = String(v).match(scoreRe);
+    const mm = String(v).match(/^\s*(\d+)\s*-\s*(\d+)\s*(.*)$/);
     if (!m || !mm) { bad.push(`bracket[${k}]`); return; }
-    adminBkDraft[k] = { h: mm[1], a: mm[2], ph: mm[3] ?? '', pa: mm[4] ?? '' };
+    const h = mm[1], a = mm[2], rest = (mm[3] || '').trim();
+    let ph = '', pa = '', adv = '';
+    if (rest) {
+      const pens = rest.match(/\(\s*(\d+)\s*-\s*(\d+)\s*p?\s*\)/i);   // (4-2) penales → avanza el de más
+      const aL = rest.match(/\(\s*(?:gana\s+)?(?:l|local)\s*\)/i);   // (L) / (gana L)
+      const aV = rest.match(/\(\s*(?:gana\s+)?(?:v|visitante)\s*\)/i);
+      if (pens) { ph = pens[1]; pa = pens[2]; adv = parseInt(ph) > parseInt(pa) ? 'home' : 'away'; }
+      else if (aL) adv = 'home';
+      else if (aV) adv = 'away';
+    }
+    adminBkDraft[k] = { h, a, ph, pa, adv };
     okB++;
   });
 
@@ -1660,11 +1687,10 @@ async function saveBracketResults() {
     if (hg > ag) winner = homeTeam;
     else if (ag > hg) winner = awayTeam;
     else {
-      // empate → definir por penales (solo para avanzar, no puntúa)
+      // empate → avanza el que eligió el admin; penales son opcionales (solo registro)
+      winner = d.adv === 'home' ? homeTeam : (d.adv === 'away' ? awayTeam : null);
       hp = d.ph !== '' && d.ph != null ? parseInt(d.ph) : null;
       ap = d.pa !== '' && d.pa != null ? parseInt(d.pa) : null;
-      if (hp !== null && ap !== null) winner = hp > ap ? homeTeam : awayTeam;
-      else winner = null;
     }
     toSave.push({ match_id: m.id, home_team: homeTeam, away_team: awayTeam,
       home_goals: hg, away_goals: ag, home_pens: hp, away_pens: ap, winner });
@@ -1687,7 +1713,7 @@ async function saveBracketResults() {
   if (msg) {
     if (sinPenales > 0) {
       msg.style.color = 'var(--yellow)';
-      msg.textContent = `✓ Guardado. Ojo: ${sinPenales} empate${sinPenales > 1 ? 's' : ''} sin penales — cargá quién avanza para que el cuadro siga.`;
+      msg.textContent = `✓ Guardado. Ojo: ${sinPenales} empate${sinPenales > 1 ? 's' : ''} sin definir quién avanza — elegí el equipo que pasa para que el cuadro siga.`;
       setTimeout(() => msg.textContent = '', 5000);
     } else {
       msg.style.color = 'var(--green)';
