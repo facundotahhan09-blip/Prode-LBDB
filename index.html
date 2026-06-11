@@ -417,8 +417,7 @@
       <button class="tab on" onclick="st('ar',this)">Resultados</button>
       <button class="tab" onclick="st('ae2',this)">Posiciones</button>
       <button class="tab" onclick="st('at',this)">Tabla jugadores</button>
-      <button class="tab" onclick="st('ac',this)">Config</button>
-      <button class="tab" onclick="st('apa',this)">Jugadores</button>
+      <button class="tab" onclick="st('apa',this)">Ajustes</button>
     </div>
     <div id="ar" class="tc on"><button class="btn btn-sm" onclick="openImport()" style="margin-bottom:10px">📥 Importar resultados</button><div class="grp-tabs" id="gsa"></div><div id="pa"></div></div>
     <div id="ae2" class="tc">
@@ -426,16 +425,6 @@
       <div id="poscont-a"></div>
     </div>
     <div id="at" class="tc"><div id="atblcont"><div class="loading"><div class="spinner"></div>Cargando...</div></div></div>
-    <div id="ac" class="tc">
-      <div class="card">
-        <div style="font-size:14px;font-weight:600;margin-bottom:1rem">Contraseñas</div>
-        <div style="margin-bottom:10px"><div class="label">Contraseña jugadores (referencia para compartir)</div><input type="text" id="cfp"></div>
-        <div style="margin-bottom:4px"><div class="label">Nueva contraseña admin</div><input type="text" id="cfa" placeholder="Dejar vacío para no cambiarla"></div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Por seguridad, la contraseña actual no se muestra. Escribí una nueva solo si querés cambiarla.</div>
-        <button class="btn btn-primary btn-sm" onclick="saveCfg()">💾 Guardar</button>
-        <div class="ok" id="cfmsg"></div>
-      </div>
-    </div>
     <div id="apa" class="tc"><div id="partcont"></div></div>
   </div>
 

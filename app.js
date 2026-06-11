@@ -1826,20 +1826,32 @@ async function saveBracketProns() {
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 
-async function saveCfg() {
-  const pp = document.getElementById('cfp').value;     // contraseña a compartir (etiqueta)
-  const ap = document.getElementById('cfa').value;     // NUEVA contraseña admin (vacío = no cambiar)
+async function saveAdminPass() {
+  const ap = document.getElementById('cfa').value;     // NUEVA contraseña admin
   const msg = document.getElementById('cfmsg');
+  if (!ap || ap === '') { msg.style.color = 'var(--text3)'; msg.textContent = 'Escribí una nueva contraseña para cambiarla.'; return; }
   try {
-    await rpc('prode_admin_save_config', { p_token: TOKEN, p_new_player_pass: pp, p_new_admin_pass: ap });
+    // player_pass quedó sin uso (cada jugador entra con su propia contraseña); mandamos '' sin efecto
+    await rpc('prode_admin_save_config', { p_token: TOKEN, p_new_player_pass: '', p_new_admin_pass: ap });
   } catch (err) {
     msg.style.color = 'var(--red)'; msg.textContent = 'Error: ' + err.message; return;
   }
-  // Si se cambió la contraseña de admin, limpiamos el campo (la sesión actual sigue válida por token)
-  if (ap && ap !== '') { document.getElementById('cfa').value = ''; }
+  document.getElementById('cfa').value = '';
   msg.style.color = 'var(--green)';
-  msg.textContent = '✓ Guardado';
+  msg.textContent = '✓ Contraseña de admin actualizada';
   setTimeout(() => msg.textContent = '', 2500);
+}
+
+// Admin: eliminar una cuenta de jugador (y todos sus pronósticos)
+async function deletePlayer(name) {
+  if (!confirm(`¿Eliminar la cuenta de "${name}"?\n\nSe borran su cuenta y TODOS sus pronósticos. Esta acción no se puede deshacer.`)) return;
+  try {
+    await rpc('prode_admin_delete_player', { p_token: TOKEN, p_name: name });
+  } catch (err) {
+    alert('No se pudo eliminar: ' + err.message); return;
+  }
+  await loadCache();
+  renderPart();
 }
 
 // ── GESTIÓN DE JUGADORES (admin) ───────────────────────────────────────────────
@@ -1870,7 +1882,7 @@ async function renderPart() {
         ${avatarHtml(u, 38)}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${u}</div>
-          <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos · <a style="color:#7cc4f0;cursor:pointer" onclick="changePhoto('${u.replace(/'/g,"\\'")}')">cambiar foto</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePass('${u.replace(/'/g,"\\'")}')">contraseña</a></div>
+          <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos · <a style="color:#7cc4f0;cursor:pointer" onclick="changePhoto('${u.replace(/'/g,"\\'")}')">cambiar foto</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePass('${u.replace(/'/g,"\\'")}')">contraseña</a> · <a style="color:#f87171;cursor:pointer" onclick="deletePlayer('${u.replace(/'/g,"\\'")}')">eliminar</a></div>
         </div>
         <div class="dot ${done ? 'dot-ok' : 'dot-nd'}"></div>
       </div>`;
@@ -1879,6 +1891,17 @@ async function renderPart() {
   }
   // input oculto para cambiar foto de un jugador existente
   html += `<input type="file" accept="image/*" id="photo-changer" style="display:none">`;
+
+  // Contraseña de admin (lo que estaba en Config)
+  html += `<div style="font-size:13px;font-weight:600;margin:1.25rem 0 8px;color:var(--text2)">Tu cuenta (admin)</div>
+    <div class="card">
+      <div class="label">Nueva contraseña de admin</div>
+      <input type="text" id="cfa" placeholder="Dejar vacío para no cambiarla" style="margin-bottom:6px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Por seguridad, la contraseña actual no se muestra. Escribí una nueva solo si querés cambiarla.</div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminPass()">💾 Guardar contraseña</button>
+      <div class="ok" id="cfmsg"></div>
+    </div>`;
+
   document.getElementById('partcont').innerHTML = html;
 }
 
