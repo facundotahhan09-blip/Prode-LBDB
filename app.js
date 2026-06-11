@@ -636,6 +636,7 @@ const JORNADAS = [
 let selJ = { u: 1, a: 1 };
 let selR = { u: 'r32', a: 'r32' };  // ronda elegida dentro de Fase Eliminatoria
 let adminResDraft = {};             // borrador en memoria de resultados del admin {matchId:{h,a}}
+let adminBkDraft = {};              // borrador de resultados del bracket del admin {matchId:{h,a,ph,pa}}
 
 // Indicador de estado unificado para CUALQUIER partido (grupos o eliminatorias):
 // jugado (con puntos) · cerrado (arrancó) · abierto (se puede cargar).
@@ -669,7 +670,7 @@ function buildGT(elId, mode) {
 function renderProns(elId, mode) {
   const isA = mode === 'a';
   if (selJ[mode] === 'elim') {
-    if (isA) { renderBracketInto(elId, true, 'adminres'); return; } // admin: árbol (lo vemos en su pantalla)
+    if (isA) { renderBracketAdminRounds(elId); return; } // admin: ronda por ronda
     renderBracketPredRounds(elId);                                  // jugador: ronda por ronda
     return;
   }
@@ -760,6 +761,107 @@ function renderBracketPredRounds(elId) {
   html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Puntos: 3 exacto · 1 ganador · 0 nada. Podés modificar hasta que arranca el partido.</div>
     <button class="btn btn-primary btn-full" onclick="saveBracketProns()">💾 Guardar mis predicciones</button><div class="ok" id="bpmsg"></div>`;
   document.getElementById(elId).innerHTML = html;
+}
+
+// ── BRACKET DEL ADMIN: RONDA POR RONDA (carga de resultados reales) ─────────────
+function setBracketRoundAdmin(key) { selR.a = key; renderProns('pa', 'a'); }
+
+function renderBracketAdminRounds(elId) {
+  const complete = allGroupsComplete();
+  let html = `<div class="card" style="margin-bottom:12px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Clasificación a eliminatorias</div>`;
+  if (!complete) {
+    html += `<div style="font-size:12px;color:var(--text3)">Aún faltan resultados de grupos. Los cruces muestran las posiciones (1A, 2B…) y se completan solos con los equipos reales.</div>`;
+  } else if (!cache.bracketConfirmed) {
+    html += `<div style="font-size:12px;color:var(--text2);margin-bottom:10px">Los grupos están completos. Confirmá los clasificados para fijar los cruces (1°, 2° y 8 mejores terceros automáticos según FIFA).</div>
+      <button class="btn btn-primary btn-full" onclick="confirmGroups()">✓ Confirmar clasificados y armar cuadro</button>`;
+  } else {
+    html += `<div style="font-size:12px;color:var(--green);margin-bottom:10px">✓ Clasificados confirmados. Cargá los resultados de cada ronda abajo.</div>
+      <button class="btn btn-sm" onclick="reopenGroups()">↺ Reabrir / recalcular clasificados</button>`;
+  }
+  html += `</div>`;
+
+  // Selector de rondas
+  html += `<div class="grp-tabs" style="margin-bottom:1rem">`;
+  BRACKET_ROUNDS.forEach(rd => {
+    html += `<button class="gbt${selR.a === rd.key ? ' on' : ''}" onclick="setBracketRoundAdmin('${rd.key}')">${rd.name}</button>`;
+  });
+  html += `</div>`;
+
+  // Partidos de la ronda elegida, agrupados por fecha
+  const ms = BRACKET[selR.a] || [];
+  const byDate = {};
+  ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+        <span style="font-size:11px;color:var(--text3)">${matches.length} partido${matches.length > 1 ? 's' : ''}</span>
+      </div>`;
+    matches.forEach(m => html += bracketCardAdmin(m));
+    html += `</div>`;
+  });
+
+  html += `<div style="font-size:12px;color:var(--text2);margin:6px 0 8px">Cargá el marcador de los 90'. Si un cruce queda empatado, aparece el casillero de penales para definir quién avanza (no suma puntos).</div>
+    <button class="btn btn-primary btn-full" onclick="saveBracketResults()">✓ Guardar resultados del cuadro</button><div class="ok" id="bmsg"></div>`;
+  document.getElementById(elId).innerHTML = html;
+}
+
+// Tarjeta de carga de un cruce (admin): marcador 90' + penales solo si hay empate
+function bracketCardAdmin(m) {
+  const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
+  const homeLbl = homeTeam || slotLabel(m.home);
+  const awayLbl = awayTeam || slotLabel(m.away);
+  const teamsKnown = !!(homeTeam && awayTeam);
+  const d = adminBkDraft[m.id];
+  const saved = cache.bracketResults[m.id];
+  const h = d ? d.h : (saved && saved.home_goals != null ? saved.home_goals : '');
+  const a = d ? d.a : (saved && saved.away_goals != null ? saved.away_goals : '');
+  const ph = d ? (d.ph ?? '') : (saved && saved.home_pens != null ? saved.home_pens : '');
+  const pa = d ? (d.pa ?? '') : (saved && saved.away_pens != null ? saved.away_pens : '');
+  const isDraw = h !== '' && a !== '' && h != null && a != null && parseInt(h) === parseInt(a);
+  const flCell = t => t ? fl(t) : '<span style="display:inline-block;width:24px;height:16px;background:#1f2a40;border-radius:2px"></span>';
+  const dis = teamsKnown ? '' : 'disabled';
+  return `<div class="match-card">
+    <div class="match-meta">
+      <span class="match-time">${m.time} ARG</span>
+      <span style="color:var(--text3)">·</span>
+      <span class="match-sede">${m.sede}</span>
+      ${teamsKnown ? '' : '<span style="margin-left:auto"><span class="badge bno">Por definir</span></span>'}
+    </div>
+    <div class="match-body">
+      <div class="team-l"><span class="team-name">${homeLbl}</span><span class="flag">${flCell(homeTeam)}</span></div>
+      <input type="number" min="0" max="99" value="${h}" id="br${m.id}h" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
+      <div class="vs">vs</div>
+      <input type="number" min="0" max="99" value="${a}" id="br${m.id}a" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
+      <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
+    </div>
+    <div id="pens-${m.id}" style="${isDraw ? '' : 'display:none;'}margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+      <div style="font-size:11px;color:var(--text2);text-align:center;margin-bottom:6px">⚽ Empate — penales (solo definen quién avanza, no suman puntos)</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="font-size:12px;color:var(--text2);max-width:90px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${homeLbl}</span>
+        <input type="number" min="0" max="99" value="${ph}" id="br${m.id}ph" style="width:46px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
+        <span style="color:var(--text3)">-</span>
+        <input type="number" min="0" max="99" value="${pa}" id="br${m.id}pa" style="width:46px" ${dis} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftBkRes('${m.id}')">
+        <span style="font-size:12px;color:var(--text2);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${awayLbl}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Borrador de resultados del bracket del admin + mostrar/ocultar penales en vivo
+function draftBkRes(id) {
+  const h = document.getElementById('br' + id + 'h');
+  const a = document.getElementById('br' + id + 'a');
+  const ph = document.getElementById('br' + id + 'ph');
+  const pa = document.getElementById('br' + id + 'pa');
+  adminBkDraft[id] = { h: h ? h.value : '', a: a ? a.value : '', ph: ph ? ph.value : '', pa: pa ? pa.value : '' };
+  const pens = document.getElementById('pens-' + id);
+  if (pens && h && a) {
+    const isDraw = h.value !== '' && a.value !== '' && parseInt(h.value) === parseInt(a.value);
+    pens.style.display = isDraw ? '' : 'none';
+  }
 }
 
 // Tarjeta de un partido de eliminatoria en modo predicción (mismo estilo que grupos)
@@ -1502,44 +1604,49 @@ async function saveBracketResults() {
   await autoSnapshot(); // foto de posiciones previas (para las flechas ▲▼)
   const toSave = [];
   ALL_BRACKET_MATCHES.forEach(m => {
-    const h = document.getElementById('br'+m.id+'h');
-    const a = document.getElementById('br'+m.id+'a');
-    if (!h || !a || h.value === '' || a.value === '') return;
-    const ph = document.getElementById('br'+m.id+'ph');
-    const pa = document.getElementById('br'+m.id+'pa');
-    const hg = parseInt(h.value), ag = parseInt(a.value);
+    const d = adminBkDraft[m.id];
+    if (!d || d.h === '' || d.h == null || d.a === '' || d.a == null) return;
+    const hg = parseInt(d.h), ag = parseInt(d.a);
     const homeTeam = resolveSlot(m.home), awayTeam = resolveSlot(m.away);
-    let winner;
+    let winner, hp = null, ap = null;
     if (hg > ag) winner = homeTeam;
     else if (ag > hg) winner = awayTeam;
     else {
-      // empate → definir por penales
-      const hp = ph && ph.value !== '' ? parseInt(ph.value) : null;
-      const ap = pa && pa.value !== '' ? parseInt(pa.value) : null;
+      // empate → definir por penales (solo para avanzar, no puntúa)
+      hp = d.ph !== '' && d.ph != null ? parseInt(d.ph) : null;
+      ap = d.pa !== '' && d.pa != null ? parseInt(d.pa) : null;
       if (hp !== null && ap !== null) winner = hp > ap ? homeTeam : awayTeam;
       else winner = null;
     }
-    const row = { match_id: m.id, home_team: homeTeam, away_team: awayTeam,
-      home_goals: hg, away_goals: ag,
-      home_pens: ph && ph.value !== '' ? parseInt(ph.value) : null,
-      away_pens: pa && pa.value !== '' ? parseInt(pa.value) : null,
-      winner };
-    toSave.push(row);
-    cache.bracketResults[m.id] = row;
+    toSave.push({ match_id: m.id, home_team: homeTeam, away_team: awayTeam,
+      home_goals: hg, away_goals: ag, home_pens: hp, away_pens: ap, winner });
+    cache.bracketResults[m.id] = { match_id: m.id, home_team: homeTeam, away_team: awayTeam,
+      home_goals: hg, away_goals: ag, home_pens: hp, away_pens: ap, winner };
   });
   if (toSave.length) {
     try { await rpc('prode_admin_save_bracket_results', { p_token: TOKEN, p_rows: toSave }); }
     catch (err) {
-      btn.disabled = false; btn.innerHTML = '✓ Guardar resultados';
+      btn.disabled = false; btn.innerHTML = '✓ Guardar resultados del cuadro';
       const m = document.getElementById('bmsg');
       if (m) { m.style.color = 'var(--red)'; m.textContent = 'No se pudieron guardar: ' + err.message; }
       return;
     }
   }
+  const sinPenales = toSave.filter(r => r.home_goals === r.away_goals && !r.winner).length;
   await loadCache();
   renderProns('pa', 'a');
   const msg = document.getElementById('bmsg');
-  if (msg) { msg.textContent = '✓ Resultados guardados'; setTimeout(() => msg.textContent = '', 2500); }
+  if (msg) {
+    if (sinPenales > 0) {
+      msg.style.color = 'var(--yellow)';
+      msg.textContent = `✓ Guardado. Ojo: ${sinPenales} empate${sinPenales > 1 ? 's' : ''} sin penales — cargá quién avanza para que el cuadro siga.`;
+      setTimeout(() => msg.textContent = '', 5000);
+    } else {
+      msg.style.color = 'var(--green)';
+      msg.textContent = '✓ Resultados guardados';
+      setTimeout(() => msg.textContent = '', 2500);
+    }
+  }
 }
 
 // Guarda en memoria lo que el jugador tipea en el bracket (no perder al cambiar de vista)
