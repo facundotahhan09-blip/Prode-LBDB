@@ -1671,6 +1671,22 @@ async function deletePlayer(name) {
   renderPart();
 }
 
+// Admin: reiniciar el prode desde cero (resultados, cuadro y pronósticos)
+async function resetTournament() {
+  const t = prompt('Esto borra TODOS los resultados, el cuadro y los pronósticos.\nLas cuentas de jugador se mantienen. No se puede deshacer.\n\nPara confirmar, escribí: REINICIAR');
+  if (t === null) return;
+  if (t.trim().toUpperCase() !== 'REINICIAR') { alert('Cancelado: no escribiste REINICIAR.'); return; }
+  try {
+    await rpc('prode_admin_reset_tournament', { p_token: TOKEN });
+  } catch (err) {
+    alert('No se pudo reiniciar: ' + err.message); return;
+  }
+  // limpia marcas locales de "ganador visto" y recarga para mostrar el estado limpio
+  try { Object.keys(localStorage).filter(k => k.startsWith('prode_seen_winner_')).forEach(k => localStorage.removeItem(k)); } catch (_) {}
+  alert('✓ Prode reiniciado. Se va a recargar la página.');
+  location.reload();
+}
+
 // ── GESTIÓN DE JUGADORES (admin) ───────────────────────────────────────────────
 
 async function renderPart() {
@@ -1717,6 +1733,13 @@ async function renderPart() {
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Por seguridad, la contraseña actual no se muestra. Escribí una nueva solo si querés cambiarla.</div>
       <button class="btn btn-primary btn-sm" onclick="saveAdminPass()">💾 Guardar contraseña</button>
       <div class="ok" id="cfmsg"></div>
+    </div>
+
+    <div style="font-size:13px;font-weight:600;margin:1.25rem 0 8px;color:#f87171">Zona de peligro</div>
+    <div class="card" style="border-color:rgba(248,113,113,.35)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Reinicia el prode desde cero: borra <strong>todos los resultados, el cuadro y los pronósticos</strong>, y vuelve la clasificación a sin confirmar. Las <strong>cuentas de jugador se mantienen</strong> (para borrarlas usá "eliminar" en cada una). No se puede deshacer.</div>
+      <button class="btn btn-sm" style="background:#7f1d1d;color:#fff;border-color:#7f1d1d" onclick="resetTournament()">🗑️ Reiniciar prode</button>
+      <div class="ok" id="resetmsg"></div>
     </div>`;
 
   document.getElementById('partcont').innerHTML = html;
