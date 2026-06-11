@@ -314,7 +314,7 @@ function renderPosiciones(mode) {
     sel.appendChild(b);
   });
   if (selPos[mode] === 'grupos') renderGrupos(mode, contId);
-  else renderElim(contId, false);
+  else renderElim(contId, mode === 'a');
 }
 
 // Fase de grupos con toggle: Tabla completa / Mejores terceros
@@ -1417,9 +1417,78 @@ function bracketScore(mid) {
 // Render del bracket para el jugador (te=elimu) o admin (ae2=elima)
 // renderElim ahora se usa SOLO para la pestaña "Eliminatorias" = modo REAL (solo lectura)
 // Cuadro horizontal de un solo lado: 16avos → ... → Final → 🏆 Campeón
+// ── OVERRIDE DE CRUCES (admin): corregir clasificados del cuadro a mano ─────────
+function bracketOverridePanel() {
+  if (!allGroupsComplete())
+    return `<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--text3)">⚙️ El ajuste manual de cruces estará disponible cuando terminen los grupos.</div></div>`;
+  if (!cache.bracketConfirmed)
+    return `<div class="card" style="margin-bottom:12px"><div style="font-size:12px;color:var(--text2)">⚙️ Para ajustar cruces a mano, primero confirmá los clasificados en la pestaña <strong>Resultados</strong>.</div></div>`;
+  let rows = '';
+  BRACKET.r32.forEach(m => {
+    rows += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+      <span style="color:var(--text3);width:52px;flex-shrink:0;font-size:11px">${m.id}</span>
+      ${slotSelect(m.home)}<span style="color:var(--text3);font-size:11px">vs</span>${slotSelect(m.away)}
+    </div>`;
+  });
+  return `<details class="card" style="margin-bottom:12px">
+    <summary style="cursor:pointer;font-weight:600;font-size:13px">⚙️ Ajustar clasificados del cuadro (16avos)</summary>
+    <div style="font-size:11px;color:var(--text3);margin:8px 0 12px">Tocá solo si la asignación automática de algún equipo (sobre todo los <strong>terceros</strong>) no coincide con la oficial de FIFA. Cambiá lo necesario y guardá.</div>
+    ${rows}
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="saveSlotOverrides()">Guardar ajustes</button>
+      <button class="btn btn-sm" onclick="restoreAutoSlots()">↺ Restaurar automático</button>
+    </div>
+    <div class="ok" id="ovmsg"></div>
+  </details>`;
+}
+
+function slotCandidates(slot) {
+  if (slot.startsWith('3-'))
+    return slot.slice(2).split('').map(L => computeGroupTable(L)[2]?.team).filter(Boolean);
+  const letter = slot.slice(1); // '1A' → 'A'
+  return (GRUPOS[letter] || []).slice();
+}
+
+function slotSelect(slot) {
+  const current = resolveSlot(slot) || '';
+  const cands = slotCandidates(slot);
+  if (current && !cands.includes(current)) cands.unshift(current);
+  let opts = `<option value="">(${slotLabel(slot)})</option>`;
+  cands.forEach(t => opts += `<option value="${t}" ${t === current ? 'selected' : ''}>${t}</option>`);
+  return `<select id="ov-${slot}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:5px">${opts}</select>`;
+}
+
+async function saveSlotOverrides() {
+  const msg = document.getElementById('ovmsg');
+  const slots = { ...cache.bracketSlots };
+  const teams = [];
+  BRACKET.r32.forEach(m => [m.home, m.away].forEach(slot => {
+    const sel = document.getElementById('ov-' + slot);
+    if (sel && sel.value) { slots[slot] = sel.value; teams.push(sel.value); }
+  }));
+  const dup = teams.find((t, i) => teams.indexOf(t) !== i);
+  if (dup) { if (msg) { msg.style.color = 'var(--red)'; msg.textContent = `"${dup}" está repetido en dos cruces. Revisá antes de guardar.`; } return; }
+  const rows = Object.entries(slots).map(([slot, team]) => ({ slot, team }));
+  try { await rpc('prode_admin_save_bracket_slots', { p_token: TOKEN, p_rows: rows, p_confirmed: null }); }
+  catch (err) { if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'No se pudo guardar: ' + err.message; } return; }
+  cache.bracketSlots = slots;
+  renderPosiciones('a');
+}
+
+async function restoreAutoSlots() {
+  const msg = document.getElementById('ovmsg');
+  const auto = computeAutoSlots();
+  const rows = Object.entries(auto).map(([slot, team]) => ({ slot, team }));
+  try { await rpc('prode_admin_save_bracket_slots', { p_token: TOKEN, p_rows: rows, p_confirmed: null }); }
+  catch (err) { if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'No se pudo: ' + err.message; } return; }
+  cache.bracketSlots = auto;
+  renderPosiciones('a');
+}
+
 function renderElim(id, isA) {
   const complete = allGroupsComplete();
-  let html = `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
+  let html = isA ? bracketOverridePanel() : '';
+  html += `<div class="bk-head"><div class="bk-title">🏆 CUADRO DEL MUNDIAL</div>
     <div class="bk-sub">Resultados reales · deslizá horizontal y vertical para recorrer el cuadro →</div></div>`;
   if (!complete) {
     html += `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-6px 0 12px">Se va completando con los equipos reales a medida que terminan los grupos.</div>`;
