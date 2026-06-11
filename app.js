@@ -704,7 +704,7 @@ function renderProns(elId, mode) {
         <div class="match-body">
           <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
           <input type="number" min="0" max="99" value="${ph ?? ''}" id="m${mode}${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);${isA ? `draftRes('${m.id}')` : `draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
-          <div class="vs">${hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs'}</div>
+          <div class="vs">vs</div>
           <input type="number" min="0" max="99" value="${pa ?? ''}" id="m${mode}${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);${isA ? `draftRes('${m.id}')` : `draftG(${m.id})`}" ${(isA ? false : lockUser) ? 'disabled' : ''}>
           <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
         </div>
@@ -887,7 +887,7 @@ function bracketCardPred(m) {
   const pa = myP?.a ?? '';
   const chip = (!teamsKnown && !hasR) ? '<span class="badge bno">Por definir</span>' : statusChip(hasR, started, p);
   const flCell = t => t ? fl(t) : '<span style="display:inline-block;width:24px;height:16px;background:#1f2a40;border-radius:2px"></span>';
-  const mid = hasR ? `<span class="result-score">${r.home_goals}-${r.away_goals}</span>` : 'vs';
+  const mid = 'vs';
   const inH = `<input type="number" min="0" max="99" value="${ph}" id="bp${m.id}h" ${editable ? '' : 'disabled'} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`;
   const inA = `<input type="number" min="0" max="99" value="${pa}" id="bp${m.id}a" ${editable ? '' : 'disabled'} oninput="if(this.value.length>2)this.value=this.value.slice(0,2);draftB('${m.id}')">`;
   return `<div class="match-card">
