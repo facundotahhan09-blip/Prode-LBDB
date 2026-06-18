@@ -970,6 +970,123 @@ function openImport() {
 }
 function closeImport() { document.getElementById('impOverlay').style.display = 'none'; }
 
+// ── CORREGIR PRONÓSTICOS DE UN JUGADOR (admin) ─────────────────────────────────
+// Permite al admin cargar/corregir los pronósticos de grupos de un jugador,
+// incluso si el partido ya arrancó. Guarda vía prode_admin_save_player_predictions.
+let epPlayer = null, epJ = 1, epData = {}, epDraft = {};
+
+async function editPlayerProns(name) {
+  epPlayer = name; epJ = 1; epDraft = {}; epData = {};
+  document.getElementById('epName').textContent = name;
+  document.getElementById('epMsg').textContent = '';
+  document.getElementById('epOverlay').style.display = 'flex';
+  document.getElementById('epBody').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:24px;text-align:center">Cargando pronósticos…</div>';
+  const { byPlayer } = await loadAllProns();
+  epData = byPlayer[name] || {};
+  epRenderJbar();
+  epRender();
+}
+
+function closeEditProns() { document.getElementById('epOverlay').style.display = 'none'; epPlayer = null; }
+
+function epRenderJbar() {
+  document.getElementById('epJbar').innerHTML = JORNADAS.map(j =>
+    `<button class="ep-jbtn ${epJ === j.num ? 'on' : ''}" onclick="epSelJ(${j.num})">${j.label}</button>`
+  ).join('');
+}
+
+function epSelJ(j) { epJ = j; epRenderJbar(); epRender(); }
+
+// Valor a mostrar en el casillero: lo del borrador si el admin lo tocó, sino lo guardado.
+function epVal(id, side) {
+  if (epDraft[id] && epDraft[id][side] !== undefined) return epDraft[id][side];
+  const d = epData[id];
+  if (d) return side === 'h' ? d.h : d.a;
+  return '';
+}
+
+function epRender() {
+  const ms = MATCHES.filter(m => m.j === epJ);
+  const byDate = {};
+  ms.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
+  let html = '';
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin:12px 0 0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+      </div>`;
+    matches.forEach(m => {
+      const r = cache.results[m.id];
+      const tieneDraft = epDraft[m.id] && epDraft[m.id].h !== '' && epDraft[m.id].h !== undefined && epDraft[m.id].a !== '' && epDraft[m.id].a !== undefined;
+      const falta = !epData[m.id] && !tieneDraft;
+      const started = groupMatchStarted(m);
+      const color = GRP_COLORS[m.g];
+      let chip = '';
+      if (falta) chip = `<span class="ep-chip ep-chip-falta">falta</span>`;
+      else if (r) chip = `<span class="ep-chip ep-chip-r">real ${r.home_goals}-${r.away_goals}</span>`;
+      else if (started) chip = `<span class="ep-chip ep-chip-run">arrancó</span>`;
+      html += `<div class="match-card ${falta ? 'ep-falta' : ''}">
+        <div class="match-meta">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;background:${color};font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${m.g}</span>
+          <span class="match-time">${m.time} ARG</span>
+          <span style="color:var(--text3)">·</span>
+          <span class="match-sede">${m.sede}</span>
+          ${chip}
+        </div>
+        <div class="match-body">
+          <div class="team-l"><span class="team-name">${m.h}</span><span class="flag">${fl(m.h)}</span></div>
+          <input type="number" min="0" max="99" value="${epVal(m.id,'h') ?? ''}" id="ep${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);epDraftSet(${m.id})">
+          <div class="vs">vs</div>
+          <input type="number" min="0" max="99" value="${epVal(m.id,'a') ?? ''}" id="ep${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);epDraftSet(${m.id})">
+          <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('epBody').innerHTML = html;
+}
+
+function epDraftSet(id) {
+  const h = document.getElementById('ep' + id + 'h').value;
+  const a = document.getElementById('ep' + id + 'a').value;
+  epDraft[id] = { h, a };
+}
+
+async function epSave() {
+  const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando…';
+  const msg = document.getElementById('epMsg');
+  // Guardamos lo que el admin tocó (borrador) que esté completo en TODAS las jornadas.
+  const rows = [];
+  Object.keys(epDraft).forEach(id => {
+    const d = epDraft[id];
+    if (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) {
+      rows.push({ match_id: parseInt(id), home_goals: parseInt(d.h), away_goals: parseInt(d.a) });
+    }
+  });
+  if (!rows.length) {
+    btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
+    msg.style.color = 'var(--text2)'; msg.textContent = 'No cargaste ningún cambio todavía.';
+    return;
+  }
+  try {
+    await rpc('prode_admin_save_player_predictions', { p_token: TOKEN, p_player: epPlayer, p_rows: rows });
+  } catch (err) {
+    btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
+    msg.style.color = 'var(--red)'; msg.textContent = 'No se pudo guardar: ' + err.message;
+    return;
+  }
+  // Reflejar en memoria para que los chips "falta" se actualicen al instante
+  rows.forEach(rw => { epData[rw.match_id] = { h: rw.home_goals, a: rw.away_goals }; });
+  epDraft = {};
+  btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
+  msg.style.color = 'var(--green)';
+  msg.textContent = `✓ Guardado (${rows.length} pronóstico${rows.length > 1 ? 's' : ''}). El ranking se actualiza solo.`;
+  epRender();
+  renderPart(); // refresca el contador X/N en la lista de atrás
+}
+
 function applyImport() {
   const msg = document.getElementById('impMsg');
   let raw = document.getElementById('impText').value.trim();
@@ -1715,7 +1832,7 @@ async function renderPart() {
         ${avatarHtml(u, 38)}
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${u}</div>
-          <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos · <a style="color:#7cc4f0;cursor:pointer" onclick="changePhoto('${u.replace(/'/g,"\\'")}')">cambiar foto</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePass('${u.replace(/'/g,"\\'")}')">contraseña</a> · <a style="color:#f87171;cursor:pointer" onclick="deletePlayer('${u.replace(/'/g,"\\'")}')">eliminar</a></div>
+          <div style="font-size:11px;color:var(--text2)">${filled}/${MATCHES.length} pronósticos · <a style="color:#7cc4f0;cursor:pointer" onclick="editPlayerProns('${u.replace(/'/g,"\\'")}')">corregir</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePhoto('${u.replace(/'/g,"\\'")}')">cambiar foto</a> · <a style="color:#7cc4f0;cursor:pointer" onclick="changePass('${u.replace(/'/g,"\\'")}')">contraseña</a> · <a style="color:#f87171;cursor:pointer" onclick="deletePlayer('${u.replace(/'/g,"\\'")}')">eliminar</a></div>
         </div>
         <div class="dot ${done ? 'dot-ok' : 'dot-nd'}"></div>
       </div>`;

@@ -294,6 +294,22 @@
   .imp-modal textarea{width:100%;min-height:150px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px;resize:vertical;box-sizing:border-box}
   .imp-actions{display:flex;gap:8px;margin-top:12px}
   .imp-msg{font-size:12px;margin-top:10px;line-height:1.5}
+  /* Editor de pronósticos por jugador (admin) */
+  .ep-overlay{display:none;position:fixed;inset:0;background:rgba(5,8,16,.8);z-index:1001;align-items:center;justify-content:center;padding:18px}
+  .ep-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;max-width:560px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .ep-head{padding:16px 18px 10px}
+  .ep-head h3{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ep-head p{font-size:12px;color:var(--text2);margin-top:5px;line-height:1.45}
+  .ep-jbar{display:flex;gap:6px;padding:0 18px 10px;flex-wrap:wrap}
+  .ep-jbtn{flex:1;min-width:90px;padding:7px 8px;border-radius:9px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
+  .ep-jbtn.on{background:#1E3A5F;color:#fff;border-color:#1E3A5F}
+  .ep-body{padding:4px 18px 14px;overflow-y:auto;flex:1;border-top:1px solid var(--border)}
+  .ep-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .match-card.ep-falta{border-color:rgba(248,113,113,.55);background:rgba(248,113,113,.06)}
+  .ep-chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:auto;white-space:nowrap}
+  .ep-chip-falta{background:rgba(248,113,113,.18);color:#f87171}
+  .ep-chip-run{background:rgba(245,197,66,.18);color:#f5c542}
+  .ep-chip-r{background:rgba(124,196,240,.16);color:#7cc4f0}
 </style>
 </head>
 <body>
@@ -440,6 +456,21 @@
         <button class="btn btn-sm" onclick="closeImport()">Cerrar</button>
       </div>
       <div class="imp-msg" id="impMsg"></div>
+    </div>
+  </div>
+  <div class="ep-overlay" id="epOverlay">
+    <div class="ep-modal">
+      <div class="ep-head">
+        <h3>✏️ Corregir pronósticos — <span id="epName" style="color:#f5c542"></span></h3>
+        <p>Cargá o corregí los pronósticos de <strong>fase de grupos</strong> de este jugador. Los casilleros quedan habilitados aunque el partido ya haya arrancado. Lo que está en <span style="color:#f87171">rojo</span> es lo que le falta. Cada cambio queda registrado en el historial.</p>
+      </div>
+      <div class="ep-jbar" id="epJbar"></div>
+      <div class="ep-body" id="epBody"></div>
+      <div class="ep-foot">
+        <button class="btn btn-primary" onclick="epSave()">💾 Guardar correcciones</button>
+        <button class="btn btn-sm" onclick="closeEditProns()">Cerrar</button>
+        <span class="imp-msg" id="epMsg" style="margin:0"></span>
+      </div>
     </div>
   </div>
 </body>
