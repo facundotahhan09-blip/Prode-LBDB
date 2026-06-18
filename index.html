@@ -310,6 +310,12 @@
   .ep-chip-falta{background:rgba(248,113,113,.18);color:#f87171}
   .ep-chip-run{background:rgba(245,197,66,.18);color:#f5c542}
   .ep-chip-r{background:rgba(124,196,240,.16);color:#7cc4f0}
+  /* Desplegable: pronósticos de todos (visible recién post-kickoff) */
+  details.others{margin-top:8px;border-top:1px dashed var(--border);padding-top:7px}
+  details.others>summary{cursor:pointer;font-size:11px;color:#7cc4f0;list-style:none;user-select:none}
+  details.others>summary::-webkit-details-marker{display:none}
+  details.others>summary::before{content:'▸ ';font-size:10px}
+  details.others[open]>summary::before{content:'▾ '}
 </style>
 </head>
 <body>

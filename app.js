@@ -1404,7 +1404,12 @@ let selPartR = 'r32';     // ronda dentro de eliminatorias
 function setPartSec(j) { selPart = j; renderMyRes(); }
 function setPartRound(key) { selPartR = key; renderMyRes(); }
 
-function renderMyRes() {
+async function renderMyRes() {
+  // Cargamos los pronósticos de TODOS, para mostrarlos en los partidos ya arrancados
+  try {
+    const { byPlayer, bpByPlayer } = await loadAllProns();
+    cache.allByPlayer = byPlayer; cache.allByPlayerBk = bpByPlayer;
+  } catch (_) { cache.allByPlayer = cache.allByPlayer || {}; cache.allByPlayerBk = cache.allByPlayerBk || {}; }
   // Selector de secciones (jornadas + eliminatoria)
   let html = `<div class="grp-tabs" style="margin-bottom:1rem">`;
   JORNADAS.forEach(j => {
@@ -1440,6 +1445,43 @@ function partByDate(ms, cardFn) {
   return html;
 }
 
+// Pronósticos de TODOS para un partido — SOLO visible después del kickoff,
+// cuando ya nadie puede modificar (transparencia sin permitir copiarse).
+function othersPanel(mid, started, isBracket) {
+  if (!started) return '';
+  const data = isBracket ? cache.allByPlayerBk : cache.allByPlayer;
+  if (!data) return '';
+  const me = (typeof CU !== 'undefined') ? CU : null;
+  const rows = (cache.players || []).map(u => {
+    const pr = data[u] ? data[u][mid] : null;
+    const has = pr && pr.h !== '' && pr.h != null && pr.a !== '' && pr.a != null;
+    const ptsVal = has ? (isBracket ? scoreBracketPts(mid, pr.h, pr.a) : pts(mid, pr.h, pr.a)) : null;
+    return { u, has, h: has ? pr.h : null, a: has ? pr.a : null, ptsVal };
+  });
+  // Orden: por puntos desc (si ya hay resultado), luego los que pronosticaron, luego alfabético
+  rows.sort((x, y) => {
+    if (x.ptsVal != null || y.ptsVal != null) return (y.ptsVal == null ? -1 : y.ptsVal) - (x.ptsVal == null ? -1 : x.ptsVal);
+    if (x.has !== y.has) return x.has ? -1 : 1;
+    return x.u.localeCompare(y.u);
+  });
+  const count = rows.filter(r => r.has).length;
+  const list = rows.map(r => {
+    const mine = me && r.u === me;
+    const pick = r.has ? `${r.h}-${r.a}` : '—';
+    let pchip = '';
+    if (r.ptsVal != null) {
+      const col = r.ptsVal === 3 ? 'var(--green)' : (r.ptsVal === 1 ? '#f5c542' : 'var(--text3)');
+      pchip = `<span style="font-size:10px;font-weight:700;color:${col};margin-left:6px">+${r.ptsVal}</span>`;
+    }
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      ${avatarHtml(r.u, 24)}
+      <span style="font-size:12px;flex:1;min-width:0;${mine ? 'font-weight:700;color:#f5c542' : 'color:var(--text2)'}">${r.u}${mine ? ' (vos)' : ''}</span>
+      <span style="font-size:12px;font-weight:600;color:${r.has ? 'var(--text)' : 'var(--text3)'}">${pick}</span>${pchip}
+    </div>`;
+  }).join('');
+  return `<details class="others"><summary>👥 Ver pronósticos de todos (${count})</summary><div style="margin-top:6px">${list}</div></details>`;
+}
+
 // Tarjeta read-only de un partido de grupos: resultado real + tu pronóstico + puntos
 function partCardGroup(m) {
   const r = cache.results[m.id];
@@ -1464,6 +1506,7 @@ function partCardGroup(m) {
       <div class="team-r"><span class="flag">${fl(m.a)}</span><span class="team-name">${m.a}</span></div>
     </div>
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>
+    ${othersPanel(m.id, started, false)}
   </div>`;
 }
 
@@ -1495,6 +1538,7 @@ function partCardBracket(m) {
       <div class="team-r"><span class="flag">${flCell(awayTeam)}</span><span class="team-name">${awayLbl}</span></div>
     </div>
     ${myLine ? `<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">${myLine}</div>` : ''}
+    ${othersPanel(m.id, started, true)}
   </div>`;
 }
 
