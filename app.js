@@ -263,6 +263,31 @@ function matchKickoff(m) {
   return new Date(Date.UTC(2026, mes, day, hh + 3, mm || 0, 0));
 }
 
+// Ordena una lista de partidos de grupos por su horario real (fecha + hora).
+// No muta el array original. Los que no se pueden parsear quedan al final.
+function sortByKickoff(arr) {
+  return arr.slice().sort((a, b) => {
+    const ka = matchKickoff(a), kb = matchKickoff(b);
+    if (!ka && !kb) return 0;
+    if (!ka) return 1;
+    if (!kb) return -1;
+    return ka - kb;
+  });
+}
+
+// Jornada "actual": la del próximo partido de grupos que todavía no terminó.
+// Si ya terminaron todos los de grupos, devuelve 'elim'. Se recalcula en cada
+// carga de página, así las vistas arrancan en lo que se juega hoy (no siempre en la 1).
+function currentJornada() {
+  const now = Date.now();
+  const DUR = 2.5 * 3600 * 1000; // ~duración de un partido, para no saltar uno en curso
+  for (const m of sortByKickoff(MATCHES)) {
+    const k = matchKickoff(m);
+    if (k && k.getTime() + DUR > now) return m.j;
+  }
+  return 'elim';
+}
+
 // ¿Ya arrancó un partido de la fase de grupos? (bloquea su pronóstico)
 function groupMatchStarted(m) {
   const ko = matchKickoff(m);
@@ -442,6 +467,7 @@ resumeSession();
 
 // ── CACHE ────────────────────────────────────────────────────────────────────
 
+let jornadaInit = false; // para fijar la jornada actual solo en la 1ª carga de la sesión
 async function loadCache() {
   const [res, players, bres, bslots, bcfg] = await Promise.all([
     dbGet('results', 'select=match_id,home_goals,away_goals'),
@@ -461,6 +487,13 @@ async function loadCache() {
   cache.bracketSlots = {};
   bslots.forEach(s => cache.bracketSlots[s.slot] = s.team);
   cache.bracketConfirmed = bcfg[0]?.groups_confirmed || false;
+
+  // La primera vez en la sesión, arrancar en la jornada que se juega hoy
+  if (!jornadaInit) {
+    const cj = currentJornada();
+    selJ.u = cj; selJ.a = cj; selPart = cj;
+    jornadaInit = true;
+  }
 
   if (CU) {
     const [prons, bprons] = await Promise.all([
@@ -665,7 +698,7 @@ function renderProns(elId, mode) {
     return;
   }
   const jNum = selJ[mode];
-  const ms = MATCHES.filter(m => m.j === jNum);
+  const ms = sortByKickoff(MATCHES.filter(m => m.j === jNum));
 
   // Agrupar por fecha para mostrar separadores de día
   const byDate = {};
@@ -1006,7 +1039,7 @@ function epVal(id, side) {
 }
 
 function epRender() {
-  const ms = MATCHES.filter(m => m.j === epJ);
+  const ms = sortByKickoff(MATCHES.filter(m => m.j === epJ));
   const byDate = {};
   ms.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
   let html = '';
@@ -1430,7 +1463,7 @@ async function renderMyRes() {
 
 function partByDate(ms, cardFn) {
   const byDate = {};
-  ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
+  sortByKickoff(ms).forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
   let html = '';
   Object.entries(byDate).forEach(([date, matches]) => {
     html += `<div style="margin-bottom:1rem">
