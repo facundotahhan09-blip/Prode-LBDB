@@ -639,7 +639,7 @@ function slotLabel(slot) {
     const mid = slot.slice(2);
     const names = {R32:'16°',R16:'8°',QF:'4°',SF:'SF'};
     const parts = mid.split('-');
-    return 'Gan. ' + (names[parts[0]]||parts[0]) + parts[2];
+    return 'Gan. ' + (names[parts[0]]||parts[0]) + parts[1];
   }
   if (slot.startsWith('L-')) {
     const parts = slot.slice(2).split('-'); // ['SF','1']
@@ -1765,6 +1765,23 @@ async function restoreAutoSlots() {
   renderPosiciones('a');
 }
 
+// Orden de "árbol" del cuadro: cada llave va después de los dos partidos que la
+// alimentan, para que en el cuadro horizontal quede centrada sobre sus orígenes.
+function bracketTreeIndex() {
+  const byId = {}; ALL_BRACKET_MATCHES.forEach(m => byId[m.id] = m);
+  const idx = {}; let n = 0;
+  const child = ref => (ref && (ref.startsWith('W-') || ref.startsWith('L-'))) ? ref.slice(2) : null;
+  function visit(id) {
+    const m = byId[id]; if (!m || (m.id in idx)) return;
+    const hc = child(m.home), ac = child(m.away);
+    if (hc) visit(hc);
+    if (ac) visit(ac);
+    idx[m.id] = n++;
+  }
+  visit('FINAL');
+  return idx;
+}
+
 function renderElim(id, isA) {
   const complete = allGroupsComplete();
   let html = isA ? bracketOverridePanel() : '';
@@ -1774,9 +1791,10 @@ function renderElim(id, isA) {
     html += `<div style="text-align:center;font-size:12px;color:var(--text3);margin:-6px 0 12px">Se va completando con los equipos reales a medida que terminan los grupos.</div>`;
   }
   html += `<div class="hbk-scroll"><div class="hbk">`;
+  const tIdx = bracketTreeIndex();
   BRACKET_ROUNDS.forEach(rd => {
     html += `<div class="hbk-col"><div class="hbk-h">${rd.name}</div><div class="hbk-ms">`;
-    (BRACKET[rd.key] || []).forEach(m => html += hbkMatch(m));
+    [...(BRACKET[rd.key] || [])].sort((a, b) => (tIdx[a.id] ?? 99) - (tIdx[b.id] ?? 99)).forEach(m => html += hbkMatch(m));
     html += `</div></div>`;
   });
   const champ = resolveSlot('W-FINAL');
