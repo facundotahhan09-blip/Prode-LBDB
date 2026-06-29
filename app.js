@@ -1021,16 +1021,18 @@ function closeImport() { document.getElementById('impOverlay').style.display = '
 // ── CORREGIR PRONÓSTICOS DE UN JUGADOR (admin) ─────────────────────────────────
 // Permite al admin cargar/corregir los pronósticos de grupos de un jugador,
 // incluso si el partido ya arrancó. Guarda vía prode_admin_save_player_predictions.
-let epPlayer = null, epJ = 1, epData = {}, epDraft = {};
+let epPlayer = null, epJ = 1, epData = {}, epDataBk = {}, epDraft = {}, epDraftBk = {};
 
 async function editPlayerProns(name) {
-  epPlayer = name; epJ = 1; epDraft = {}; epData = {};
+  epPlayer = name; epDraft = {}; epDraftBk = {}; epData = {}; epDataBk = {};
+  const cj = currentJornada(); epJ = (cj === 'elim') ? 'r32' : cj; // arrancar en lo que se juega hoy
   document.getElementById('epName').textContent = name;
   document.getElementById('epMsg').textContent = '';
   document.getElementById('epOverlay').style.display = 'flex';
   document.getElementById('epBody').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:24px;text-align:center">Cargando pronósticos…</div>';
-  const { byPlayer } = await loadAllProns();
+  const { byPlayer, bpByPlayer } = await loadAllProns();
   epData = byPlayer[name] || {};
+  epDataBk = bpByPlayer[name] || {};
   epRenderJbar();
   epRender();
 }
@@ -1038,9 +1040,13 @@ async function editPlayerProns(name) {
 function closeEditProns() { document.getElementById('epOverlay').style.display = 'none'; epPlayer = null; }
 
 function epRenderJbar() {
-  document.getElementById('epJbar').innerHTML = JORNADAS.map(j =>
+  let html = JORNADAS.map(j =>
     `<button class="ep-jbtn ${epJ === j.num ? 'on' : ''}" onclick="epSelJ(${j.num})">${j.label}</button>`
   ).join('');
+  html += BRACKET_ROUNDS.map(rd =>
+    `<button class="ep-jbtn ${epJ === rd.key ? 'on' : ''}" onclick="epSelJ('${rd.key}')">${rd.name}</button>`
+  ).join('');
+  document.getElementById('epJbar').innerHTML = html;
 }
 
 function epSelJ(j) { epJ = j; epRenderJbar(); epRender(); }
@@ -1054,6 +1060,70 @@ function epVal(id, side) {
 }
 
 function epRender() {
+  if (typeof epJ === 'number') epRenderGroup(); else epRenderBracket();
+}
+
+function epValBk(id, side) {
+  if (epDraftBk[id] && epDraftBk[id][side] !== undefined) return epDraftBk[id][side];
+  const d = epDataBk[id];
+  if (d) return side === 'h' ? d.h : d.a;
+  return '';
+}
+
+function epDraftSetBk(id) {
+  const h = document.getElementById('epb' + id + 'h').value;
+  const a = document.getElementById('epb' + id + 'a').value;
+  epDraftBk[id] = { h, a };
+}
+
+// Render del editor para una ronda del BRACKET (con equipos reales o etiquetas tipo "Gan. 16°2")
+function epRenderBracket() {
+  const ms = sortByKickoff(BRACKET[epJ] || []);
+  const byDate = {};
+  ms.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
+  let html = '';
+  Object.entries(byDate).forEach(([date, matches]) => {
+    html += `<div style="margin:12px 0 0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${date}</span>
+        <span style="flex:1;height:1px;background:var(--border)"></span>
+      </div>`;
+    matches.forEach(m => {
+      const homeT = resolveSlot(m.home), awayT = resolveSlot(m.away);
+      const homeLbl = homeT || slotLabel(m.home);
+      const awayLbl = awayT || slotLabel(m.away);
+      const r = cache.bracketResults[m.id];
+      const tieneDraft = epDraftBk[m.id] && epDraftBk[m.id].h !== '' && epDraftBk[m.id].h !== undefined && epDraftBk[m.id].a !== '' && epDraftBk[m.id].a !== undefined;
+      const falta = !epDataBk[m.id] && !tieneDraft;
+      const started = matchStarted(m.id);
+      let chip = '';
+      if (falta) chip = `<span class="ep-chip ep-chip-falta">falta</span>`;
+      else if (r) chip = `<span class="ep-chip ep-chip-r">real ${r.home_goals}-${r.away_goals}</span>`;
+      else if (started) chip = `<span class="ep-chip ep-chip-run">arrancó</span>`;
+      const flagH = homeT ? `<span class="flag">${fl(homeT)}</span>` : '';
+      const flagA = awayT ? `<span class="flag">${fl(awayT)}</span>` : '';
+      html += `<div class="match-card ${falta ? 'ep-falta' : ''}">
+        <div class="match-meta">
+          <span class="match-time">${m.time} ARG</span>
+          <span style="color:var(--text3)">·</span>
+          <span class="match-sede">${m.sede}</span>
+          ${chip}
+        </div>
+        <div class="match-body">
+          <div class="team-l"><span class="team-name">${homeLbl}</span>${flagH}</div>
+          <input type="number" min="0" max="99" value="${epValBk(m.id,'h') ?? ''}" id="epb${m.id}h" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);epDraftSetBk('${m.id}')">
+          <div class="vs">vs</div>
+          <input type="number" min="0" max="99" value="${epValBk(m.id,'a') ?? ''}" id="epb${m.id}a" oninput="if(this.value.length>2)this.value=this.value.slice(0,2);epDraftSetBk('${m.id}')">
+          <div class="team-r">${flagA}<span class="team-name">${awayLbl}</span></div>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('epBody').innerHTML = html;
+}
+
+function epRenderGroup() {
   const ms = sortByKickoff(MATCHES.filter(m => m.j === epJ));
   const byDate = {};
   ms.forEach(m => { (byDate[m.date] = byDate[m.date] || []).push(m); });
@@ -1105,7 +1175,7 @@ function epDraftSet(id) {
 async function epSave() {
   const btn = event.target; btn.disabled = true; btn.textContent = 'Guardando…';
   const msg = document.getElementById('epMsg');
-  // Guardamos lo que el admin tocó (borrador) que esté completo en TODAS las jornadas.
+  // Filas de grupos (match_id numérico)
   const rows = [];
   Object.keys(epDraft).forEach(id => {
     const d = epDraft[id];
@@ -1113,13 +1183,22 @@ async function epSave() {
       rows.push({ match_id: parseInt(id), home_goals: parseInt(d.h), away_goals: parseInt(d.a) });
     }
   });
-  if (!rows.length) {
+  // Filas de bracket (match_id texto, ej. 'R32-1')
+  const brows = [];
+  Object.keys(epDraftBk).forEach(id => {
+    const d = epDraftBk[id];
+    if (d && d.h !== '' && d.h != null && d.a !== '' && d.a != null) {
+      brows.push({ match_id: id, home_goals: parseInt(d.h), away_goals: parseInt(d.a) });
+    }
+  });
+  if (!rows.length && !brows.length) {
     btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
     msg.style.color = 'var(--text2)'; msg.textContent = 'No cargaste ningún cambio todavía.';
     return;
   }
   try {
-    await rpc('prode_admin_save_player_predictions', { p_token: TOKEN, p_player: epPlayer, p_rows: rows });
+    if (rows.length) await rpc('prode_admin_save_player_predictions', { p_token: TOKEN, p_player: epPlayer, p_rows: rows });
+    if (brows.length) await rpc('prode_admin_save_player_bracket_predictions', { p_token: TOKEN, p_player: epPlayer, p_rows: brows });
   } catch (err) {
     btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
     msg.style.color = 'var(--red)'; msg.textContent = 'No se pudo guardar: ' + err.message;
@@ -1127,10 +1206,12 @@ async function epSave() {
   }
   // Reflejar en memoria para que los chips "falta" se actualicen al instante
   rows.forEach(rw => { epData[rw.match_id] = { h: rw.home_goals, a: rw.away_goals }; });
-  epDraft = {};
+  brows.forEach(rw => { epDataBk[rw.match_id] = { h: rw.home_goals, a: rw.away_goals }; });
+  epDraft = {}; epDraftBk = {};
+  const total = rows.length + brows.length;
   btn.disabled = false; btn.innerHTML = '💾 Guardar correcciones';
   msg.style.color = 'var(--green)';
-  msg.textContent = `✓ Guardado (${rows.length} pronóstico${rows.length > 1 ? 's' : ''}). El ranking se actualiza solo.`;
+  msg.textContent = `✓ Guardado (${total} pronóstico${total > 1 ? 's' : ''}). El ranking se actualiza solo.`;
   epRender();
   renderPart(); // refresca el contador X/N en la lista de atrás
 }
