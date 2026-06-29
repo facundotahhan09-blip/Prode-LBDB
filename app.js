@@ -147,43 +147,46 @@ const MATCHES = [
 // Cada slot usa etiquetas oficiales FIFA: 1A=ganador grupo A, 2B=segundo grupo B,
 // 3rd-XXXXX = uno de los 8 mejores terceros (de la combinación de grupos indicada)
 const BRACKET = {
-  r32: [ // Ronda de 32 (16avos) — cruces oficiales Anexo C FIFA
-    {id:'R32-1', home:'2A', away:'2B',  date:'Dom 28 jun', time:'14:00', sede:'Boston'},
-    {id:'R32-2', home:'1E', away:'3-ABCDF', date:'Dom 28 jun', time:'17:00', sede:'Filadelfia'},
-    {id:'R32-3', home:'1F', away:'2C',  date:'Lun 29 jun', time:'14:00', sede:'Los Ángeles'},
-    {id:'R32-4', home:'1C', away:'2F',  date:'Lun 29 jun', time:'21:00', sede:'Houston'},
-    {id:'R32-5', home:'1I', away:'3-CDFGH', date:'Mar 30 jun', time:'14:00', sede:'Nueva Jersey'},
-    {id:'R32-6', home:'2E', away:'2I',  date:'Mar 30 jun', time:'21:00', sede:'Dallas'},
-    {id:'R32-7', home:'1A', away:'3-CEFHI', date:'Mié 1 jul', time:'14:00', sede:'Guadalajara'},
-    {id:'R32-8', home:'1L', away:'3-EHIJK', date:'Mié 1 jul', time:'21:00', sede:'Atlanta'},
-    {id:'R32-9', home:'1D', away:'3-BEFIJ', date:'Jue 2 jul', time:'14:00', sede:'San Francisco'},
-    {id:'R32-10',home:'1G', away:'3-AEHIJ', date:'Jue 2 jul', time:'21:00', sede:'Seattle'},
-    {id:'R32-11',home:'2K', away:'2L',  date:'Vie 3 jul', time:'14:00', sede:'Miami'},
-    {id:'R32-12',home:'1H', away:'2J',  date:'Vie 3 jul', time:'21:00', sede:'Kansas City'},
-    {id:'R32-13',home:'1B', away:'3-EFGIJ', date:'Sáb 4 jul', time:'14:00', sede:'Vancouver'},
-    {id:'R32-14',home:'1J', away:'2H',  date:'Sáb 4 jul', time:'21:00', sede:'CDMX'},
-    {id:'R32-15',home:'1K', away:'3-DEIJL', date:'Dom 5 jul', time:'14:00', sede:'Toronto'},
-    {id:'R32-16',home:'2D', away:'2G',  date:'Dom 5 jul', time:'21:00', sede:'Monterrey'}
+  r32: [ // Ronda de 32 (16avos) — cruces oficiales Anexo C FIFA; calendario oficial en hora ARG
+    {id:'R32-1', home:'2A', away:'2B',  date:'Dom 28 jun', time:'16:00', sede:'Los Ángeles'},
+    {id:'R32-2', home:'1E', away:'3-ABCDF', date:'Lun 29 jun', time:'17:30', sede:'Boston'},
+    {id:'R32-3', home:'1F', away:'2C',  date:'Lun 29 jun', time:'22:00', sede:'Monterrey'},
+    {id:'R32-4', home:'1C', away:'2F',  date:'Lun 29 jun', time:'14:00', sede:'Houston'},
+    {id:'R32-5', home:'1I', away:'3-CDFGH', date:'Mar 30 jun', time:'18:00', sede:'Nueva Jersey'},
+    {id:'R32-6', home:'2E', away:'2I',  date:'Mar 30 jun', time:'14:00', sede:'Dallas'},
+    {id:'R32-7', home:'1A', away:'3-CEFHI', date:'Mar 30 jun', time:'22:00', sede:'Ciudad de México'},
+    {id:'R32-8', home:'1L', away:'3-EHIJK', date:'Mié 1 jul', time:'13:00', sede:'Atlanta'},
+    {id:'R32-9', home:'1D', away:'3-BEFIJ', date:'Mié 1 jul', time:'21:00', sede:'San Francisco'},
+    {id:'R32-10',home:'1G', away:'3-AEHIJ', date:'Mié 1 jul', time:'17:00', sede:'Seattle'},
+    {id:'R32-11',home:'2K', away:'2L',  date:'Jue 2 jul', time:'20:00', sede:'Toronto'},
+    {id:'R32-12',home:'1H', away:'2J',  date:'Jue 2 jul', time:'16:00', sede:'Los Ángeles'},
+    {id:'R32-13',home:'1B', away:'3-EFGIJ', date:'Vie 3 jul', time:'00:00', sede:'Vancouver'},
+    {id:'R32-14',home:'1J', away:'2H',  date:'Vie 3 jul', time:'19:00', sede:'Miami'},
+    {id:'R32-15',home:'1K', away:'3-DEIJL', date:'Vie 3 jul', time:'22:30', sede:'Kansas City'},
+    {id:'R32-16',home:'2D', away:'2G',  date:'Vie 3 jul', time:'15:00', sede:'Dallas'}
   ],
-  r16: [ // Octavos — se nutren de los ganadores de R32
-    {id:'R16-1', home:'W-R32-1', away:'W-R32-2', date:'Lun 6 jul', time:'16:00', sede:'Filadelfia'},
-    {id:'R16-2', home:'W-R32-3', away:'W-R32-4', date:'Lun 6 jul', time:'21:00', sede:'Houston'},
-    {id:'R16-3', home:'W-R32-5', away:'W-R32-6', date:'Mar 7 jul', time:'16:00', sede:'Dallas'},
-    {id:'R16-4', home:'W-R32-7', away:'W-R32-8', date:'Mar 7 jul', time:'21:00', sede:'Atlanta'},
-    {id:'R16-5', home:'W-R32-9', away:'W-R32-10', date:'Mié 8 jul', time:'16:00', sede:'Seattle'},
-    {id:'R16-6', home:'W-R32-11', away:'W-R32-12', date:'Mié 8 jul', time:'21:00', sede:'Miami'},
-    {id:'R16-7', home:'W-R32-13', away:'W-R32-14', date:'Jue 9 jul', time:'16:00', sede:'Vancouver'},
-    {id:'R16-8', home:'W-R32-15', away:'W-R32-16', date:'Jue 9 jul', time:'21:00', sede:'Toronto'}
+  r16: [ // Octavos — cableado OFICIAL FIFA (no es secuencial)
+    {id:'R16-1', home:'W-R32-2',  away:'W-R32-5',  date:'Sáb 4 jul', time:'18:00', sede:'Filadelfia'},
+    {id:'R16-2', home:'W-R32-1',  away:'W-R32-3',  date:'Sáb 4 jul', time:'14:00', sede:'Houston'},
+    {id:'R16-3', home:'W-R32-4',  away:'W-R32-6',  date:'Dom 5 jul', time:'17:00', sede:'Nueva Jersey'},
+    {id:'R16-4', home:'W-R32-7',  away:'W-R32-8',  date:'Dom 5 jul', time:'21:00', sede:'Ciudad de México'},
+    {id:'R16-5', home:'W-R32-11', away:'W-R32-12', date:'Lun 6 jul', time:'16:00', sede:'Dallas'},
+    {id:'R16-6', home:'W-R32-9',  away:'W-R32-10', date:'Lun 6 jul', time:'21:00', sede:'Seattle'},
+    {id:'R16-7', home:'W-R32-14', away:'W-R32-16', date:'Mar 7 jul', time:'13:00', sede:'Atlanta'},
+    {id:'R16-8', home:'W-R32-13', away:'W-R32-15', date:'Mar 7 jul', time:'17:00', sede:'Vancouver'}
   ],
   qf: [ // Cuartos
-    {id:'QF-1', home:'W-R16-1', away:'W-R16-2', date:'Sáb 11 jul', time:'16:00', sede:'Boston'},
-    {id:'QF-2', home:'W-R16-3', away:'W-R16-4', date:'Sáb 11 jul', time:'21:00', sede:'Los Ángeles'},
-    {id:'QF-3', home:'W-R16-5', away:'W-R16-6', date:'Dom 12 jul', time:'16:00', sede:'Kansas City'},
-    {id:'QF-4', home:'W-R16-7', away:'W-R16-8', date:'Dom 12 jul', time:'21:00', sede:'Miami'}
+    {id:'QF-1', home:'W-R16-1', away:'W-R16-2', date:'Jue 9 jul', time:'17:00', sede:'Boston'},
+    {id:'QF-2', home:'W-R16-5', away:'W-R16-6', date:'Vie 10 jul', time:'16:00', sede:'Los Ángeles'},
+    {id:'QF-3', home:'W-R16-3', away:'W-R16-4', date:'Sáb 11 jul', time:'18:00', sede:'Miami'},
+    {id:'QF-4', home:'W-R16-7', away:'W-R16-8', date:'Sáb 11 jul', time:'22:00', sede:'Kansas City'}
   ],
   sf: [ // Semifinales
     {id:'SF-1', home:'W-QF-1', away:'W-QF-2', date:'Mar 14 jul', time:'16:00', sede:'Dallas'},
     {id:'SF-2', home:'W-QF-3', away:'W-QF-4', date:'Mié 15 jul', time:'16:00', sede:'Atlanta'}
+  ],
+  third: [ // Partido por el 3er puesto — lo juegan los perdedores de las semis
+    {id:'THIRD', home:'L-SF-1', away:'L-SF-2', date:'Sáb 18 jul', time:'18:00', sede:'Miami'}
   ],
   final: [
     {id:'FINAL', home:'W-SF-1', away:'W-SF-2', date:'Dom 19 jul', time:'16:00', sede:'MetLife, Nueva Jersey'}
@@ -194,9 +197,10 @@ const BRACKET_ROUNDS = [
   {key:'r16', name:'Octavos'},
   {key:'qf', name:'Cuartos'},
   {key:'sf', name:'Semifinal'},
+  {key:'third', name:'3er puesto'},
   {key:'final', name:'Final'}
 ];
-const ALL_BRACKET_MATCHES = [...BRACKET.r32, ...BRACKET.r16, ...BRACKET.qf, ...BRACKET.sf, ...BRACKET.final];
+const ALL_BRACKET_MATCHES = [...BRACKET.r32, ...BRACKET.r16, ...BRACKET.qf, ...BRACKET.sf, ...BRACKET.third, ...BRACKET.final];
 
 // Las 5 combinaciones de grupos para cada slot de tercero (orden de prioridad
 // de asignación según el orden de los 16avos). Cada cruce de tercero acepta uno
@@ -611,6 +615,13 @@ function resolveSlot(slot) {
     const r = cache.bracketResults[mid];
     return r?.winner || null;
   }
+  if (slot.startsWith('L-')) {
+    // perdedor de un cruce (para el partido por el 3er puesto)
+    const mid = slot.slice(2);
+    const r = cache.bracketResults[mid];
+    if (!r || !r.winner || !r.home_team || !r.away_team) return null;
+    return r.winner === r.home_team ? r.away_team : r.home_team;
+  }
   // slot de grupo o tercero
   if (cache.bracketSlots[slot]) return cache.bracketSlots[slot];
   // si el admin aún no confirmó pero los grupos están completos, calcular en vivo
@@ -629,6 +640,10 @@ function slotLabel(slot) {
     const names = {R32:'16°',R16:'8°',QF:'4°',SF:'SF'};
     const parts = mid.split('-');
     return 'Gan. ' + (names[parts[0]]||parts[0]) + parts[2];
+  }
+  if (slot.startsWith('L-')) {
+    const parts = slot.slice(2).split('-'); // ['SF','1']
+    return 'Perd. ' + parts[0] + parts[1];
   }
   if (slot.startsWith('3-')) return '3° ' + slot.slice(2);
   return slot[0] + slot.slice(1); // 1A, 2B, etc.
@@ -766,7 +781,7 @@ function renderBracketPredRounds(elId) {
   });
   html += `</div>`;
 
-  const ms = BRACKET[selR.u] || [];
+  const ms = sortByKickoff(BRACKET[selR.u] || []);
   const byDate = {};
   ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
 
@@ -812,7 +827,7 @@ function renderBracketAdminRounds(elId) {
   html += `</div>`;
 
   // Partidos de la ronda elegida, agrupados por fecha
-  const ms = BRACKET[selR.a] || [];
+  const ms = sortByKickoff(BRACKET[selR.a] || []);
   const byDate = {};
   ms.forEach(m => { if (!byDate[m.date]) byDate[m.date] = []; byDate[m.date].push(m); });
   Object.entries(byDate).forEach(([date, matches]) => {
